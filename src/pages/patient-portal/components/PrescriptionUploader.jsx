@@ -6,6 +6,9 @@ export default function PrescriptionUploader({ patientId }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [medicineResults, setMedicineResults] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingReminders, setPendingReminders] = useState([]);
+  const [currentPrescriptionId, setCurrentPrescriptionId] = useState(null);
 
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -157,24 +160,12 @@ export default function PrescriptionUploader({ patientId }) {
       // FIXED: Use the correct function name
       const smartReminders = createSmartReminders(prescriptionText, patientId);
       
-      // Save smart reminders to localStorage
-      const existingReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
-      const newReminders = [...existingReminders, ...smartReminders];
-      localStorage.setItem('smartReminders', JSON.stringify(newReminders));
+      // Show confirmation modal instead of directly saving
+      setPendingReminders(smartReminders);
+      setCurrentPrescriptionId(prescriptionFile.id);
+      setShowConfirmModal(true);
 
-      // Save medicine list for patient
-      const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
-      patientMedicines.push({
-        id: Date.now(),
-        patientId,
-        medicineList: prescriptionText,
-        timestamp: new Date().toISOString(),
-        doctorName: 'Self-uploaded',
-        prescribed: true
-      });
-      localStorage.setItem('patientMedicines', JSON.stringify(patientMedicines));
-
-      // Update UI
+      // Store medicine list for display
       setMedicineResults(prev => ({
         ...prev,
         [prescriptionFile.id]: {
@@ -185,19 +176,67 @@ export default function PrescriptionUploader({ patientId }) {
         }
       }));
 
-      // Mark as analyzed
-      setUploadedFiles(prev => 
-        prev.map(f => f.id === prescriptionFile.id ? {...f, analyzed: true} : f)
-      );
-
-      // Simple success message
-      alert('Prescription analyzed successfully! Smart reminders created and available in your Reminders tab.');
-
     } catch (error) {
       alert('Analysis failed: ' + error.message);
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleConfirmReminders = () => {
+    // Save smart reminders to localStorage
+    const existingReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+    const newReminders = [...existingReminders, ...pendingReminders];
+    localStorage.setItem('smartReminders', JSON.stringify(newReminders));
+
+    // Save medicine list for patient
+    const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+    patientMedicines.push({
+      id: Date.now(),
+      patientId,
+      medicineList: medicineResults[currentPrescriptionId]?.medicineList || '',
+      timestamp: new Date().toISOString(),
+      doctorName: 'Self-uploaded',
+      prescribed: true
+    });
+    localStorage.setItem('patientMedicines', JSON.stringify(patientMedicines));
+
+    // Mark as analyzed
+    setUploadedFiles(prev => 
+      prev.map(f => f.id === currentPrescriptionId ? {...f, analyzed: true} : f)
+    );
+
+    // Close modal and reset
+    setShowConfirmModal(false);
+    setPendingReminders([]);
+    setCurrentPrescriptionId(null);
+
+    alert('Smart reminders confirmed and saved successfully!');
+  };
+
+  const handleEditReminder = (reminderId, field, value) => {
+    setPendingReminders(prev => 
+      prev.map(r => r.id === reminderId ? {...r, [field]: value} : r)
+    );
+  };
+
+  const handleDeleteReminder = (reminderId) => {
+    setPendingReminders(prev => prev.filter(r => r.id !== reminderId));
+  };
+
+  const handleAddReminder = () => {
+    const newReminder = {
+      id: Date.now(),
+      patientId,
+      medicineName: 'New Medicine',
+      dosage: '1 tablet',
+      timing: 'morning',
+      frequency: 'once daily',
+      instructions: '',
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    setPendingReminders(prev => [...prev, newReminder]);
   };
 
   return (
@@ -284,6 +323,149 @@ export default function PrescriptionUploader({ patientId }) {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal for Smart Reminders */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                📋 Confirm & Edit Smart Reminders
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Review and edit the reminders generated from your prescription. You can modify timings, dosages, or add/remove medicines.
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-3">
+                {pendingReminders.map((reminder) => (
+                  <div key={reminder.id} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Medicine Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Medicine Name
+                        </label>
+                        <input
+                          type="text"
+                          value={reminder.medicineName}
+                          onChange={(e) => handleEditReminder(reminder.id, 'medicineName', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Dosage */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Dosage
+                        </label>
+                        <input
+                          type="text"
+                          value={reminder.dosage}
+                          onChange={(e) => handleEditReminder(reminder.id, 'dosage', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Timing */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Timing
+                        </label>
+                        <select
+                          value={reminder.timing}
+                          onChange={(e) => handleEditReminder(reminder.id, 'timing', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="morning">Morning</option>
+                          <option value="afternoon">Afternoon</option>
+                          <option value="evening">Evening</option>
+                          <option value="night">Night</option>
+                        </select>
+                      </div>
+
+                      {/* Frequency */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Frequency
+                        </label>
+                        <select
+                          value={reminder.frequency}
+                          onChange={(e) => handleEditReminder(reminder.id, 'frequency', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="once daily">Once Daily</option>
+                          <option value="twice daily">Twice Daily</option>
+                          <option value="three times daily">Three Times Daily</option>
+                          <option value="as needed">As Needed</option>
+                        </select>
+                      </div>
+
+                      {/* Instructions */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Instructions
+                        </label>
+                        <input
+                          type="text"
+                          value={reminder.instructions}
+                          onChange={(e) => handleEditReminder(reminder.id, 'instructions', e.target.value)}
+                          placeholder="e.g., Take after meals"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteReminder(reminder.id)}
+                      >
+                        <Icon name="Trash2" size={14} className="mr-1" />
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add New Reminder Button */}
+                <button
+                  onClick={handleAddReminder}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors flex items-center justify-center"
+                >
+                  <Icon name="Plus" size={20} className="mr-2" />
+                  Add Another Medicine
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setPendingReminders([]);
+                  setCurrentPrescriptionId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmReminders}
+                disabled={pendingReminders.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Icon name="Check" size={16} className="mr-2" />
+                Confirm & Save ({pendingReminders.length} reminders)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
