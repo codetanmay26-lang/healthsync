@@ -45,7 +45,7 @@ export default function PrescriptionUploader({ patientId }) {
                 {
                   parts: [
                     {
-                      text: "Carefully extract all medicine information from this prescription image. For each medicine, provide: 1. Medicine Name (clean, no extra words) 2. Dosage (mg, ml, units) 3. Timing notation (if present, look for patterns like 1-0-1, 1-1-1, 0-1-0 which indicate Morning-Afternoon-Evening dosing where 1=take, 0=skip) 4. Any additional instructions. Format each medicine on a new line as: MedicineName - Dosage - TimingNotation - Instructions",
+                      text: "Carefully extract all medicine information from this prescription image. For each medicine, provide: 1. Medicine Name (clean, no extra words) 2. Dosage (mg, ml, units) 3. Timing notation (if present, look for patterns like 1-0-1, 2-1-1, 0-3-0, etc. which indicate Morning-Afternoon-Evening dosing. Use any digit where non-zero means take medicine at that time, 0 means skip) 4. Any additional instructions. Format each medicine on a new line as: MedicineName - Dosage - TimingNotation - Instructions",
                     },
                     {
                       inline_data: {
@@ -102,41 +102,44 @@ export default function PrescriptionUploader({ patientId }) {
     const reminders = [];
 
     lines.forEach((line, index) => {
-      // Parse medicine information - expect format: MedicineName - Dosage - TimingNotation - Instructions
-      const parts = line.split("-").map((p) => p.trim());
+      // Better parsing: Only split on " - " (space-hyphen-space) to preserve notation like 1-0-1
+      const parts = line.split(/\s+-\s+/);
 
       if (parts.length >= 2) {
         const medicineInfo = parts[0].replace(/^\d+\.?\s*/, ""); // Remove numbering
         const dosage = parts[1] || "1 tablet";
         const timingNotation = parts[2] || "";
-        const instructions = parts[3] || timingNotation; // If no timing notation, instructions might be in part[2]
+        const instructions = parts[3] || ""; // Instructions are separate now
 
-        // Check if timing notation matches the medical format (1-0-1, 1-1-1, etc.)
-        const medicalNotationRegex = /^[01]-[01]-[01]$/;
+        // Check if timing notation matches the medical format (accepts any digit, e.g., 1-0-1, 2-1-1, 1-0-2)
+        const medicalNotationRegex = /^\d+-\d+-\d+$/;
         let timingSchedule = [];
 
         if (medicalNotationRegex.test(timingNotation)) {
           // Parse medical notation: Morning-Afternoon-Evening
+          // Treat any non-zero value as 1 (take medicine at that time)
           const [morning, afternoon, evening] = timingNotation.split("-");
 
-          if (morning === "1") {
+          if (morning !== "0") {
             timingSchedule.push({
               timing: "morning",
               label: "Morning",
             });
           }
-          if (afternoon === "1") {
+          if (afternoon !== "0") {
             timingSchedule.push({
               timing: "afternoon",
               label: "Afternoon",
             });
           }
-          if (evening === "1") {
+          if (evening !== "0") {
             timingSchedule.push({
               timing: "evening",
               label: "Evening",
             });
           }
+
+          console.log(`⏰ Timing schedule created:`, timingSchedule);
 
           // If no times are set (0-0-0), default to morning
           if (timingSchedule.length === 0) {
@@ -202,7 +205,7 @@ export default function PrescriptionUploader({ patientId }) {
               : `${timingSchedule.length} times daily`;
 
           reminders.push({
-            id: Date.now() + index * 1000 + scheduleIndex,
+            id: Date.now() + index * 1000 + scheduleIndex + Math.random() * 100,
             patientId,
             medicineName: medicineInfo,
             dosage,
@@ -562,22 +565,23 @@ export default function PrescriptionUploader({ patientId }) {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
-                    </div>
+                      </div>
 
-                    {/* Delete Button */}
-                    <div className="mt-3 flex justify-end">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteReminder(reminder.id)}
-                      >
-                        <Icon name="Trash2" size={14} className="mr-1" />
-                        Remove
-                      </Button>
+                      {/* Delete Button */}
+                      <div className="mt-3 flex justify-end">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteReminder(reminder.id)}
+                        >
+                          <Icon name="Trash2" size={14} className="mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                     </div>
-                  </div>
                   );
-                })}                {/* Add New Reminder Button */}
+                })}{" "}
+                {/* Add New Reminder Button */}
                 <button
                   onClick={handleAddReminder}
                   className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors flex items-center justify-center"
