@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import Button from '../../../components/ui/Button';
-import Icon from '../../../components/AppIcon';
+import React, { useState } from "react";
+import Button from "../../../components/ui/Button";
+import Icon from "../../../components/AppIcon";
 
 export default function PrescriptionUploader({ patientId }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -12,134 +12,199 @@ export default function PrescriptionUploader({ patientId }) {
 
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
-    const newFiles = files.map(file => ({
+    const newFiles = files.map((file) => ({
       id: Date.now() + Math.random(),
       file,
       name: file.name,
       uploadDate: new Date().toLocaleDateString(),
-      analyzed: false
+      analyzed: false,
     }));
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
   };
 
   const extractTextFromPrescription = async (file) => {
     try {
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         // Enhanced image processing with Gemini Vision Pro
         const reader = new FileReader();
-        const base64 = await new Promise(resolve => {
-          reader.onload = () => resolve(reader.result.split(',')[1]);
+        const base64 = await new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result.split(",")[1]);
           reader.readAsDataURL(file);
         });
 
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-goog-api-key': import.meta.env.VITE_GEMINI_API_KEY
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: "Carefully extract all medicine information from this prescription image. For each medicine, provide: 1. Medicine Name (clean, no extra words) 2. Dosage (mg, ml, units) 3. Timing (morning, afternoon, evening, night, or specific times) 4. Frequency (once daily, twice daily, etc) Format as: MedicineName - Dosage - Timing"
-              }, {
-                inline_data: {
-                  mime_type: file.type,
-                  data: base64
-                }
-              }]
-            }]
-          })
-        });
+        const response = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-goog-api-key": import.meta.env.VITE_GEMINI_API_KEY,
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: "Carefully extract all medicine information from this prescription image. For each medicine, provide: 1. Medicine Name (clean, no extra words) 2. Dosage (mg, ml, units) 3. Timing notation (if present, look for patterns like 1-0-1, 1-1-1, 0-1-0 which indicate Morning-Afternoon-Evening dosing where 1=take, 0=skip) 4. Any additional instructions. Format each medicine on a new line as: MedicineName - Dosage - TimingNotation - Instructions",
+                    },
+                    {
+                      inline_data: {
+                        mime_type: file.type,
+                        data: base64,
+                      },
+                    },
+                  ],
+                },
+              ],
+            }),
+          }
+        );
 
         const data = await response.json();
         const extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!extractedText || extractedText.trim().length < 10) {
-          alert('Could not extract text from prescription image. Please try a clearer image.');
+          alert(
+            "Could not extract text from prescription image. Please try a clearer image."
+          );
           return null;
         }
 
         return extractedText.trim();
-      } 
-      else if (file.type === 'application/pdf') {
+      } else if (file.type === "application/pdf") {
         // PDF processing with better error handling
         const text = await file.text();
         if (!text || text.trim().length < 10) {
-          alert('Could not extract text from PDF. Please try a different file.');
+          alert(
+            "Could not extract text from PDF. Please try a different file."
+          );
           return null;
         }
         return text.trim();
-      }
-      else {
+      } else {
         // Try to read any other file as text
         const text = await file.text();
         if (!text || text.trim().length < 10) {
-          alert('File appears to be empty or unreadable.');
+          alert("File appears to be empty or unreadable.");
           return null;
         }
         return text.trim();
       }
     } catch (error) {
-      console.error('Error extracting text:', error);
-      alert('Could not read prescription. Please try a different file.');
+      console.error("Error extracting text:", error);
+      alert("Could not read prescription. Please try a different file.");
       return null;
     }
   };
 
   const createSmartReminders = (prescriptionText, patientId) => {
-    const lines = prescriptionText.split('\n').filter(line => line.trim());
+    const lines = prescriptionText.split("\n").filter((line) => line.trim());
     const reminders = [];
 
     lines.forEach((line, index) => {
-      // Better parsing for medicine information
-      const parts = line.split('-').map(p => p.trim());
+      // Parse medicine information - expect format: MedicineName - Dosage - TimingNotation - Instructions
+      const parts = line.split("-").map((p) => p.trim());
+      
       if (parts.length >= 2) {
-        const medicineInfo = parts[0].replace(/^\d+\.?\s*/, ''); // Remove numbering
-        const dosage = parts[1] || '1 tablet';
-        const instructions = parts[2] || '';
-        
-        // Smart timing extraction
-        let timing = 'morning'; // default
-        const lowerInstructions = instructions.toLowerCase();
-        
-        // Check for specific timing keywords
-        if (lowerInstructions.includes('evening') || lowerInstructions.includes('night') || lowerInstructions.includes('bedtime')) {
-          timing = 'evening';
-        } else if (lowerInstructions.includes('afternoon') || lowerInstructions.includes('lunch')) {
-          timing = 'afternoon';  
-        } else if (lowerInstructions.includes('twice') || lowerInstructions.includes('2 times')) {
-          timing = 'morning'; // First dose, create second dose separately
-        } else if (lowerInstructions.includes('morning') || lowerInstructions.includes('breakfast')) {
-          timing = 'morning';
+        const medicineInfo = parts[0].replace(/^\d+\.?\s*/, ""); // Remove numbering
+        const dosage = parts[1] || "1 tablet";
+        const timingNotation = parts[2] || "";
+        const instructions = parts[3] || timingNotation; // If no timing notation, instructions might be in part[2]
+
+        // Check if timing notation matches the medical format (1-0-1, 1-1-1, etc.)
+        const medicalNotationRegex = /^[01]-[01]-[01]$/;
+        let timingSchedule = [];
+
+        if (medicalNotationRegex.test(timingNotation)) {
+          // Parse medical notation: Morning-Afternoon-Evening
+          const [morning, afternoon, evening] = timingNotation.split("-");
+          
+          if (morning === "1") {
+            timingSchedule.push({
+              timing: "morning",
+              label: "Morning"
+            });
+          }
+          if (afternoon === "1") {
+            timingSchedule.push({
+              timing: "afternoon",
+              label: "Afternoon"
+            });
+          }
+          if (evening === "1") {
+            timingSchedule.push({
+              timing: "evening",
+              label: "Evening"
+            });
+          }
+
+          // If no times are set (0-0-0), default to morning
+          if (timingSchedule.length === 0) {
+            timingSchedule.push({
+              timing: "morning",
+              label: "Morning"
+            });
+          }
+        } else {
+          // Fallback to text-based timing extraction for backward compatibility
+          const lowerInstructions = (timingNotation + " " + instructions).toLowerCase();
+          
+          // Check for specific timing keywords
+          if (
+            lowerInstructions.includes("evening") ||
+            lowerInstructions.includes("night") ||
+            lowerInstructions.includes("bedtime")
+          ) {
+            timingSchedule.push({ timing: "evening", label: "Evening" });
+          } else if (
+            lowerInstructions.includes("afternoon") ||
+            lowerInstructions.includes("lunch")
+          ) {
+            timingSchedule.push({ timing: "afternoon", label: "Afternoon" });
+          } else if (
+            lowerInstructions.includes("twice") ||
+            lowerInstructions.includes("2 times")
+          ) {
+            timingSchedule.push({ timing: "morning", label: "Morning" });
+            timingSchedule.push({ timing: "evening", label: "Evening" });
+          } else if (
+            lowerInstructions.includes("three times") ||
+            lowerInstructions.includes("3 times") ||
+            lowerInstructions.includes("thrice")
+          ) {
+            timingSchedule.push({ timing: "morning", label: "Morning" });
+            timingSchedule.push({ timing: "afternoon", label: "Afternoon" });
+            timingSchedule.push({ timing: "evening", label: "Evening" });
+          } else if (
+            lowerInstructions.includes("morning") ||
+            lowerInstructions.includes("breakfast")
+          ) {
+            timingSchedule.push({ timing: "morning", label: "Morning" });
+          } else {
+            // Default to morning if no timing information found
+            timingSchedule.push({ timing: "morning", label: "Morning" });
+          }
         }
 
-        reminders.push({
-          id: Date.now() + index,
-          patientId,
-          medicineName: medicineInfo,
-          dosage,
-          timing,
-          frequency: lowerInstructions.includes('twice') ? 'twice daily' : 'once daily',
-          instructions: instructions,
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        });
+        // Create a reminder for each timing in the schedule
+        timingSchedule.forEach((scheduleItem, scheduleIndex) => {
+          const frequencyText = timingSchedule.length === 1 ? "once daily" : 
+                               timingSchedule.length === 2 ? "twice daily" : 
+                               timingSchedule.length === 3 ? "three times daily" : 
+                               `${timingSchedule.length} times daily`;
 
-        // Create second reminder for twice daily medicines
-        if (lowerInstructions.includes('twice')) {
           reminders.push({
-            id: Date.now() + index + 1000,
+            id: Date.now() + index * 1000 + scheduleIndex,
             patientId,
             medicineName: medicineInfo,
             dosage,
-            timing: 'evening',
-            frequency: 'twice daily',
-            instructions: instructions + ' (Second dose)',
-            status: 'pending',
-            createdAt: new Date().toISOString()
+            timing: scheduleItem.timing,
+            frequency: frequencyText,
+            instructions: instructions || `Take ${dosage} ${scheduleItem.label.toLowerCase()}`,
+            status: "pending",
+            createdAt: new Date().toISOString(),
           });
-        }
+        });
       }
     });
 
@@ -148,10 +213,12 @@ export default function PrescriptionUploader({ patientId }) {
 
   const handleAnalyzeAndCreateReminders = async (prescriptionFile) => {
     setAnalyzing(true);
-    
+
     try {
-      const prescriptionText = await extractTextFromPrescription(prescriptionFile.file);
-      
+      const prescriptionText = await extractTextFromPrescription(
+        prescriptionFile.file
+      );
+
       if (!prescriptionText) {
         setAnalyzing(false);
         return;
@@ -159,25 +226,24 @@ export default function PrescriptionUploader({ patientId }) {
 
       // FIXED: Use the correct function name
       const smartReminders = createSmartReminders(prescriptionText, patientId);
-      
+
       // Show confirmation modal instead of directly saving
       setPendingReminders(smartReminders);
       setCurrentPrescriptionId(prescriptionFile.id);
       setShowConfirmModal(true);
 
       // Store medicine list for display
-      setMedicineResults(prev => ({
+      setMedicineResults((prev) => ({
         ...prev,
         [prescriptionFile.id]: {
           success: true,
           medicineList: prescriptionText,
           smartReminders,
-          analyzedAt: new Date().toLocaleString()
-        }
+          analyzedAt: new Date().toLocaleString(),
+        },
       }));
-
     } catch (error) {
-      alert('Analysis failed: ' + error.message);
+      alert("Analysis failed: " + error.message);
     } finally {
       setAnalyzing(false);
     }
@@ -185,25 +251,31 @@ export default function PrescriptionUploader({ patientId }) {
 
   const handleConfirmReminders = () => {
     // Save smart reminders to localStorage
-    const existingReminders = JSON.parse(localStorage.getItem('smartReminders') || '[]');
+    const existingReminders = JSON.parse(
+      localStorage.getItem("smartReminders") || "[]"
+    );
     const newReminders = [...existingReminders, ...pendingReminders];
-    localStorage.setItem('smartReminders', JSON.stringify(newReminders));
+    localStorage.setItem("smartReminders", JSON.stringify(newReminders));
 
     // Save medicine list for patient
-    const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+    const patientMedicines = JSON.parse(
+      localStorage.getItem("patientMedicines") || "[]"
+    );
     patientMedicines.push({
       id: Date.now(),
       patientId,
-      medicineList: medicineResults[currentPrescriptionId]?.medicineList || '',
+      medicineList: medicineResults[currentPrescriptionId]?.medicineList || "",
       timestamp: new Date().toISOString(),
-      doctorName: 'Self-uploaded',
-      prescribed: true
+      doctorName: "Self-uploaded",
+      prescribed: true,
     });
-    localStorage.setItem('patientMedicines', JSON.stringify(patientMedicines));
+    localStorage.setItem("patientMedicines", JSON.stringify(patientMedicines));
 
     // Mark as analyzed
-    setUploadedFiles(prev => 
-      prev.map(f => f.id === currentPrescriptionId ? {...f, analyzed: true} : f)
+    setUploadedFiles((prev) =>
+      prev.map((f) =>
+        f.id === currentPrescriptionId ? { ...f, analyzed: true } : f
+      )
     );
 
     // Close modal and reset
@@ -211,32 +283,32 @@ export default function PrescriptionUploader({ patientId }) {
     setPendingReminders([]);
     setCurrentPrescriptionId(null);
 
-    alert('Smart reminders confirmed and saved successfully!');
+    alert("Smart reminders confirmed and saved successfully!");
   };
 
   const handleEditReminder = (reminderId, field, value) => {
-    setPendingReminders(prev => 
-      prev.map(r => r.id === reminderId ? {...r, [field]: value} : r)
+    setPendingReminders((prev) =>
+      prev.map((r) => (r.id === reminderId ? { ...r, [field]: value } : r))
     );
   };
 
   const handleDeleteReminder = (reminderId) => {
-    setPendingReminders(prev => prev.filter(r => r.id !== reminderId));
+    setPendingReminders((prev) => prev.filter((r) => r.id !== reminderId));
   };
 
   const handleAddReminder = () => {
     const newReminder = {
       id: Date.now(),
       patientId,
-      medicineName: 'New Medicine',
-      dosage: '1 tablet',
-      timing: 'morning',
-      frequency: 'once daily',
-      instructions: '',
-      status: 'pending',
-      createdAt: new Date().toISOString()
+      medicineName: "New Medicine",
+      dosage: "1 tablet",
+      timing: "morning",
+      frequency: "once daily",
+      instructions: "",
+      status: "pending",
+      createdAt: new Date().toISOString(),
     };
-    setPendingReminders(prev => [...prev, newReminder]);
+    setPendingReminders((prev) => [...prev, newReminder]);
   };
 
   return (
@@ -261,51 +333,76 @@ export default function PrescriptionUploader({ patientId }) {
       </div>
 
       <div className="space-y-4">
-        {uploadedFiles.map(prescription => (
-          <div key={prescription.id} className="border border-gray-200 rounded-lg p-4">
+        {uploadedFiles.map((prescription) => (
+          <div
+            key={prescription.id}
+            className="border border-gray-200 rounded-lg p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="font-medium text-gray-900">{prescription.name}</p>
-                <p className="text-sm text-gray-500">Uploaded: {prescription.uploadDate}</p>
+                <p className="text-sm text-gray-500">
+                  Uploaded: {prescription.uploadDate}
+                </p>
               </div>
-              
+
               <div className="flex gap-2">
                 {!prescription.analyzed && (
                   <Button
                     size="sm"
-                    onClick={() => handleAnalyzeAndCreateReminders(prescription)}
+                    onClick={() =>
+                      handleAnalyzeAndCreateReminders(prescription)
+                    }
                     disabled={analyzing}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    {analyzing ? 'Creating Smart Reminders...' : 'Create Smart Reminders'}
+                    {analyzing
+                      ? "Creating Smart Reminders..."
+                      : "Create Smart Reminders"}
                   </Button>
                 )}
-                
+
                 {prescription.analyzed && (
-                  <Button variant="outline" size="sm" disabled className="text-green-600">
-                    <Icon name="Check" size={16} className="mr-1" />
-                    ✓ Reminders Created
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="text-green-600"
+                  >
+                    <Icon name="Check" size={16} className="mr-1" />✓ Reminders
+                    Created
                   </Button>
                 )}
               </div>
             </div>
-            
+
             {/* Show Smart Reminders Results */}
             {medicineResults[prescription.id] && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">Smart Reminders Created</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">
+                  Smart Reminders Created
+                </h4>
                 <div className="space-y-2">
-                  {medicineResults[prescription.id].smartReminders?.map(reminder => (
-                    <div key={reminder.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                      <div>
-                        <span className="font-medium text-gray-900">{reminder.medicineName}</span>
-                        <span className="text-sm text-gray-600 ml-2">({reminder.dosage})</span>
+                  {medicineResults[prescription.id].smartReminders?.map(
+                    (reminder) => (
+                      <div
+                        key={reminder.id}
+                        className="flex items-center justify-between p-2 bg-white rounded border"
+                      >
+                        <div>
+                          <span className="font-medium text-gray-900">
+                            {reminder.medicineName}
+                          </span>
+                          <span className="text-sm text-gray-600 ml-2">
+                            ({reminder.dosage})
+                          </span>
+                        </div>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full capitalize">
+                          {reminder.timing}
+                        </span>
                       </div>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full capitalize">
-                        {reminder.timing}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
                 <p className="text-xs text-green-700 mt-2 font-medium">
                   ✓ Smart reminders are now available in your Reminders tab
@@ -314,12 +411,15 @@ export default function PrescriptionUploader({ patientId }) {
             )}
           </div>
         ))}
-        
+
         {uploadedFiles.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <Icon name="Upload" size={48} className="mx-auto mb-4 opacity-50" />
             <p>No prescriptions uploaded yet</p>
-            <p className="text-sm">Upload prescription images (JPG, PNG) or PDFs to create smart medication reminders</p>
+            <p className="text-sm">
+              Upload prescription images (JPG, PNG) or PDFs to create smart
+              medication reminders
+            </p>
           </div>
         )}
       </div>
@@ -333,14 +433,18 @@ export default function PrescriptionUploader({ patientId }) {
                 📋 Confirm & Edit Smart Reminders
               </h3>
               <p className="text-sm text-gray-600 mt-1">
-                Review and edit the reminders generated from your prescription. You can modify timings, dosages, or add/remove medicines.
+                Review and edit the reminders generated from your prescription.
+                You can modify timings, dosages, or add/remove medicines.
               </p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-3">
                 {pendingReminders.map((reminder) => (
-                  <div key={reminder.id} className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                  <div
+                    key={reminder.id}
+                    className="border border-gray-300 rounded-lg p-4 bg-gray-50"
+                  >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Medicine Name */}
                       <div>
@@ -350,7 +454,13 @@ export default function PrescriptionUploader({ patientId }) {
                         <input
                           type="text"
                           value={reminder.medicineName}
-                          onChange={(e) => handleEditReminder(reminder.id, 'medicineName', e.target.value)}
+                          onChange={(e) =>
+                            handleEditReminder(
+                              reminder.id,
+                              "medicineName",
+                              e.target.value
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -363,7 +473,13 @@ export default function PrescriptionUploader({ patientId }) {
                         <input
                           type="text"
                           value={reminder.dosage}
-                          onChange={(e) => handleEditReminder(reminder.id, 'dosage', e.target.value)}
+                          onChange={(e) =>
+                            handleEditReminder(
+                              reminder.id,
+                              "dosage",
+                              e.target.value
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
@@ -375,7 +491,13 @@ export default function PrescriptionUploader({ patientId }) {
                         </label>
                         <select
                           value={reminder.timing}
-                          onChange={(e) => handleEditReminder(reminder.id, 'timing', e.target.value)}
+                          onChange={(e) =>
+                            handleEditReminder(
+                              reminder.id,
+                              "timing",
+                              e.target.value
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="morning">Morning</option>
@@ -392,12 +514,20 @@ export default function PrescriptionUploader({ patientId }) {
                         </label>
                         <select
                           value={reminder.frequency}
-                          onChange={(e) => handleEditReminder(reminder.id, 'frequency', e.target.value)}
+                          onChange={(e) =>
+                            handleEditReminder(
+                              reminder.id,
+                              "frequency",
+                              e.target.value
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="once daily">Once Daily</option>
                           <option value="twice daily">Twice Daily</option>
-                          <option value="three times daily">Three Times Daily</option>
+                          <option value="three times daily">
+                            Three Times Daily
+                          </option>
                           <option value="as needed">As Needed</option>
                         </select>
                       </div>
@@ -410,7 +540,13 @@ export default function PrescriptionUploader({ patientId }) {
                         <input
                           type="text"
                           value={reminder.instructions}
-                          onChange={(e) => handleEditReminder(reminder.id, 'instructions', e.target.value)}
+                          onChange={(e) =>
+                            handleEditReminder(
+                              reminder.id,
+                              "instructions",
+                              e.target.value
+                            )
+                          }
                           placeholder="e.g., Take after meals"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
