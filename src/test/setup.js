@@ -22,11 +22,18 @@ global.alert = vi.fn();
 // Mock window.confirm
 global.confirm = vi.fn(() => true);
 
-// Setup localStorage mock
+// Setup localStorage mock with actual storage
+const localStorageData = {};
 const localStorageMock = {
-  getItem: vi.fn((key) => null),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: (key) => localStorageData[key] || null,
+  setItem: (key, value) => {
+    localStorageData[key] = value;
+  },
+  removeItem: (key) => {
+    delete localStorageData[key];
+  },
+  clear: () => {
+    Object.keys(localStorageData).forEach((key) => delete localStorageData[key]);
+  },
 };
 global.localStorage = localStorageMock;
