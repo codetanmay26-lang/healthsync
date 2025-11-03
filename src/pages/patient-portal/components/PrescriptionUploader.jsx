@@ -321,31 +321,6 @@ export default function PrescriptionUploader({ patientId }) {
     setPendingReminders((prev) => [...prev, newReminder]);
   };
 
-  const handleAddTimingForMedicine = (baseReminder) => {
-    // Create a new reminder with same medicine but different timing
-    const existingTimings = pendingReminders
-      .filter((r) => r.medicineName === baseReminder.medicineName)
-      .map((r) => r.timing);
-
-    // Suggest next available timing
-    const allTimings = ["morning", "afternoon", "evening", "night"];
-    const nextTiming =
-      allTimings.find((t) => !existingTimings.includes(t)) || "morning";
-
-    const newReminder = {
-      id: Date.now() + Math.random(),
-      patientId,
-      medicineName: baseReminder.medicineName,
-      dosage: baseReminder.dosage,
-      timing: nextTiming,
-      frequency: baseReminder.frequency,
-      instructions: baseReminder.instructions,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    setPendingReminders((prev) => [...prev, newReminder]);
-  };
-
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex items-center justify-between mb-4">
@@ -476,149 +451,121 @@ export default function PrescriptionUploader({ patientId }) {
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-3">
                 {pendingReminders.map((reminder, index) => {
-                  // Count how many timings this medicine has
-                  const sameMedianeCount = pendingReminders.filter(
-                    (r) => r.medicineName === reminder.medicineName
-                  ).length;
-                  const isMultiTiming = sameMedianeCount > 1;
-
                   return (
                     <div
                       key={reminder.id}
-                      className={`border rounded-lg p-4 ${
-                        isMultiTiming
-                          ? "border-blue-300 bg-blue-50"
-                          : "border-gray-300 bg-gray-50"
-                      }`}
+                      className="border border-gray-300 rounded-lg p-4 bg-gray-50"
                     >
-                      {/* Show badge for multiple timings */}
-                      {isMultiTiming && (
-                        <div className="mb-2">
-                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            <Icon name="Clock" size={12} className="mr-1" />
-                            {sameMedianeCount} timings for this medicine
-                          </span>
-                        </div>
-                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Medicine Name */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Medicine Name
-                        </label>
-                        <input
-                          type="text"
-                          value={reminder.medicineName}
-                          onChange={(e) =>
-                            handleEditReminder(
-                              reminder.id,
-                              "medicineName",
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                        {/* Medicine Name */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Medicine Name
+                          </label>
+                          <input
+                            type="text"
+                            value={reminder.medicineName}
+                            onChange={(e) =>
+                              handleEditReminder(
+                                reminder.id,
+                                "medicineName",
+                                e.target.value
+                              )
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
 
-                      {/* Dosage */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Dosage
-                        </label>
-                        <input
-                          type="text"
-                          value={reminder.dosage}
-                          onChange={(e) =>
-                            handleEditReminder(
-                              reminder.id,
-                              "dosage",
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                        {/* Dosage */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Dosage
+                          </label>
+                          <input
+                            type="text"
+                            value={reminder.dosage}
+                            onChange={(e) =>
+                              handleEditReminder(
+                                reminder.id,
+                                "dosage",
+                                e.target.value
+                              )
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
 
-                      {/* Timing */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Timing
-                        </label>
-                        <select
-                          value={reminder.timing}
-                          onChange={(e) =>
-                            handleEditReminder(
-                              reminder.id,
-                              "timing",
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="morning">Morning</option>
-                          <option value="afternoon">Afternoon</option>
-                          <option value="evening">Evening</option>
-                          <option value="night">Night</option>
-                        </select>
-                      </div>
+                        {/* Timing */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Timing
+                          </label>
+                          <select
+                            value={reminder.timing}
+                            onChange={(e) =>
+                              handleEditReminder(
+                                reminder.id,
+                                "timing",
+                                e.target.value
+                              )
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="morning">Morning</option>
+                            <option value="afternoon">Afternoon</option>
+                            <option value="evening">Evening</option>
+                            <option value="night">Night</option>
+                          </select>
+                        </div>
 
-                      {/* Frequency */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Frequency
-                        </label>
-                        <select
-                          value={reminder.frequency}
-                          onChange={(e) =>
-                            handleEditReminder(
-                              reminder.id,
-                              "frequency",
-                              e.target.value
-                            )
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="once daily">Once Daily</option>
-                          <option value="twice daily">Twice Daily</option>
-                          <option value="three times daily">
-                            Three Times Daily
-                          </option>
-                          <option value="as needed">As Needed</option>
-                        </select>
-                      </div>
+                        {/* Frequency */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Frequency
+                          </label>
+                          <select
+                            value={reminder.frequency}
+                            onChange={(e) =>
+                              handleEditReminder(
+                                reminder.id,
+                                "frequency",
+                                e.target.value
+                              )
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="once daily">Once Daily</option>
+                            <option value="twice daily">Twice Daily</option>
+                            <option value="three times daily">
+                              Three Times Daily
+                            </option>
+                            <option value="as needed">As Needed</option>
+                          </select>
+                        </div>
 
-                      {/* Instructions */}
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Instructions
-                        </label>
-                        <input
-                          type="text"
-                          value={reminder.instructions}
-                          onChange={(e) =>
-                            handleEditReminder(
-                              reminder.id,
-                              "instructions",
-                              e.target.value
-                            )
-                          }
-                          placeholder="e.g., Take after meals"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                        {/* Instructions */}
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Instructions
+                          </label>
+                          <input
+                            type="text"
+                            value={reminder.instructions}
+                            onChange={(e) =>
+                              handleEditReminder(
+                                reminder.id,
+                                "instructions",
+                                e.target.value
+                              )
+                            }
+                            placeholder="e.g., Take after meals"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="mt-3 flex justify-between items-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddTimingForMedicine(reminder)}
-                        className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                      >
-                        <Icon name="Clock" size={14} className="mr-1" />
-                        Add Another Timing
-                      </Button>
+                    {/* Delete Button */}
+                    <div className="mt-3 flex justify-end">
                       <Button
                         variant="destructive"
                         size="sm"
@@ -630,9 +577,7 @@ export default function PrescriptionUploader({ patientId }) {
                     </div>
                   </div>
                   );
-                })}
-
-                {/* Add New Reminder Button */}
+                })}                {/* Add New Reminder Button */}
                 <button
                   onClick={handleAddReminder}
                   className="w-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors flex items-center justify-center"
