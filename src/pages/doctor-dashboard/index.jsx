@@ -4,25 +4,20 @@ import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
 import { getDoctorPatients } from '../../services/localStorageUserManagement';
 import EmergencyAlertBanner from '../../components/ui/EmergencyAlertBanner';
 import Header from '../../components/ui/Header';
-import DoctorMessaging from './components/DoctorMessaging';
-import SummaryMetricsCards from './components/SummaryMetricsCards';
 import FilterControls from './components/FilterControls';
 import PatientListTable from './components/PatientListTable';
-import EmergencyAlertsPanel from './components/EmergencyAlertsPanel';
 import PatientAnalyticsRealTime from './components/PatientAnalyticsRealTime';
 import PatientVitalsPanel from './components/PatientVitalsPanel'; 
 import AnalysisReportsPanel from './components/AnalysisReportsPanel';
-import QuickActionsPanel from './components/QuickActionsPanel';
+import DoctorMessaging from './components/DoctorMessaging';
+import DoctorDashboardOverview from './components/DoctorDashboardOverview';
 import Icon from '../../components/AppIcon';
 
 const DoctorDashboard = () => {
   const { user, isLoading } = useAuth();
 
-  // Tab state - Check URL parameter for initial tab
-  const [activeTab, setActiveTab] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('tab') || 'overview';
-  });
+  // Tab state
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Patient and alert state
   const [patients, setPatients] = useState([]);
@@ -34,6 +29,16 @@ const DoctorDashboard = () => {
     riskFilter: 'all',
     dateRange: { start: '', end: '' }
   });
+
+  // Check URL for tab parameter on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, []);
 
   // Load REAL patient data assigned to this doctor
   useEffect(() => {
@@ -203,6 +208,7 @@ const DoctorDashboard = () => {
 
   // Event handlers
   const handlePatientClick = (patient) => {
+    sessionStorage.setItem('selectedPatientProfile', patient.id);
     window.location.href = `/patient-profile?id=${patient.id}`;
   };
 
@@ -312,58 +318,21 @@ const DoctorDashboard = () => {
 
         {/* Tab Content */}
         <div className="space-y-6">
-          {/* Overview Tab */}
+          {/* Overview Tab - NEW CLEAN DESIGN */}
           {activeTab === 'overview' && (
-            <>
-              <SummaryMetricsCards 
-                metrics={summaryMetrics}
-                onMetricClick={handleMetricClick}
-              />
-
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2 space-y-6">
-                  <div className="bg-surface border border-border rounded-lg">
-                    <div className="p-6 border-b border-border">
-                      <h2 className="text-lg font-semibold text-text-primary mb-4">
-                        Your Assigned Patients ({patients.length})
-                      </h2>
-                      <FilterControls 
-                        onFiltersChange={setFilters}
-                        patientCount={filteredPatients.length}
-                        totalPatients={patients.length}
-                        currentFilters={filters}
-                      />
-                    </div>
-                    
-                    <PatientListTable 
-                      patients={filteredPatients}
-                      onPatientClick={handlePatientClick}
-                      onBulkMessage={handleBulkMessage}
-                      selectedPatients={selectedPatients}
-                      onPatientSelect={setSelectedPatients}
-                    />
-                  </div>
-
-                  <AnalysisReportsPanel />
-                </div>
-
-                <div className="space-y-6">
-                  <EmergencyAlertsPanel 
-                    alerts={realAlerts}
-                    onAlertAction={handleAlertAction}
-                    onDismissAlert={handleDismissAlert}
-                    data-component="emergency-alerts"
-                  />
-                  
-                  <QuickActionsPanel />
-                </div>
-              </div>
-            </>
+            <DoctorDashboardOverview
+              patients={patients}
+              summaryMetrics={summaryMetrics}
+              realAlerts={realAlerts}
+              onPatientClick={handlePatientClick}
+              onViewAllPatients={() => setActiveTab('patients')}
+              onViewAllAlerts={() => {
+                const alertsPanel = document.querySelector('[data-component="emergency-alerts"]');
+                if (alertsPanel) alertsPanel.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
           )}
-{/* Messages Tab */}
-{activeTab === 'messages' && (
-  <DoctorMessaging />
-)}
+
           {/* Patients Tab */}
           {activeTab === 'patients' && (
             <div className="bg-surface border border-border rounded-lg">
@@ -399,6 +368,11 @@ const DoctorDashboard = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Messages Tab */}
+          {activeTab === 'messages' && (
+            <DoctorMessaging />
           )}
 
           {/* Vitals Tab */}

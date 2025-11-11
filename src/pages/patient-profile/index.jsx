@@ -1,240 +1,132 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/ui/Header';
-import EmergencyAlertBanner from '../../components/ui/EmergencyAlertBanner';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import Icon from '../../components/AppIcon';
+import Button from '../../components/ui/Button';
 import PatientHeader from './components/PatientHeader';
 import MedicationTimeline from './components/MedicationTimeline';
 import LabReportsViewer from './components/LabReportsViewer';
 import HealthLogsChart from './components/HealthLogsChart';
-import AISuggestions from './components/AISuggestions';
-import ChatMessaging from './components/ChatMessaging';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { getUserById } from '../../services/localStorageUserManagement';
 
 const PatientProfile = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('medications');
-  const [patientInfo, setPatientInfo] = useState(null);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Real data states - will be loaded from localStorage
-  const [mockMedications, setMockMedications] = useState([]);
-  const [mockLabReports, setMockLabReports] = useState([]);
-  const [mockHealthLogs, setMockHealthLogs] = useState([]);
-  const [mockAISuggestions, setMockAISuggestions] = useState([]);
-
-useEffect(() => {
-  // Get patient ID from URL params
-  const urlParams = new URLSearchParams(window.location.search);
-  const patientId = urlParams.get('id') || 'patient123';
-
-  // Load only data for this specific patient
-  const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
-  const labReports = JSON.parse(localStorage.getItem('labReports') || '[]');
-  const healthLogs = JSON.parse(localStorage.getItem('healthLogs') || '[]');
-  const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
-
-  // Filter all data by patient ID
-  const filteredMedicines = patientMedicines.filter(med => med.patientId === patientId);
-  const filteredLabReports = labReports.filter(report => report.patientId === patientId);
-  const filteredHealthLogs = healthLogs.filter(log => log.patientId === patientId);
-  const filteredAdherenceReports = adherenceReports.filter(report => report.patientId === patientId);
-
-  // Set patient info with consistent ID
-  setPatient({
-    id: patientId,
-    name: 'Rakesh Sharma',
-    age: 45,
-    gender: 'male',
-    bloodType: 'A+',
-    phone: '555 123-4567',
-    email: 'john.doe@email.com',
-    emergencyContact: 'Jane Doe - 555 987-6543',
-    status: 'monitoring',
-    riskLevel: 'medium',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-    vitals: {
-      heartRate: 78,
-      bloodPressure: '135/85',
-      temperature: 98.6,
-      lastUpdated: new Date().toISOString()
-    },
-    lastVisit: '2025-01-05',
-    nextAppointment: '2025-01-15'
-  });
-
-  // Convert filtered medicines to expected format
-  const formattedMedications = filteredMedicines.map((med, index) => ({
-    id: `med-${index + 1}`,
-    name: med.medicineList || 'Prescribed Medication',
-    dosage: '10mg',
-    frequency: 'Once daily',
-    prescribedDate: '2024-12-15',
-    duration: '90 days',
-    adherence: filteredAdherenceReports.length > 0 ? 
-      Math.round((filteredAdherenceReports.filter(report => report.medicationTaken).length / filteredAdherenceReports.length) * 100) : 92,
-    nextDose: 'Tomorrow 8:00 AM',
-    status: 'active',
-    instructions: 'Take with food in the morning.',
-    aiWarnings: ['Monitor blood pressure regularly'],
-    recentDoses: [
-      { time: 'Today 8:00 AM', taken: true },
-      { time: 'Yesterday 8:00 AM', taken: true },
-      { time: 'Jan 6 8:00 AM', taken: false },
-      { time: 'Jan 5 8:00 AM', taken: true }
-    ],
-    sideEffects: ['None reported']
-  }));
-
-  // Set all the real filtered data
-  setMockMedications(formattedMedications);
-  setMockLabReports(filteredLabReports);
-  setMockHealthLogs(filteredHealthLogs);
-  setMockAISuggestions([]);
   
-  setLoading(false);
-}, []);
+  // Real data states
+  const [medications, setMedications] = useState([]);
+  const [labReports, setLabReports] = useState([]);
+  const [healthLogs, setHealthLogs] = useState([]);
+  const [adherenceData, setAdherenceData] = useState(null);
 
+  useEffect(() => {
+    loadPatientData();
+  }, []);
 
-  // Mock emergency alerts
-  const mockAlerts = [
-    {
-      id: 'alert-patient-001',
-      type: 'patient',
-      priority: 'medium',
-      title: 'Medication Adherence Alert',
-      message: 'Rakesh Sharma missed 2 consecutive Metformin doses',
-      timestamp: new Date().toISOString(),
-      roles: ['doctor'],
-      active: true,
-      actionLabel: 'Contact Patient',
-      actionUrl: '/patient-profile'
+  const loadPatientData = () => {
+    try {
+      // Get patient ID from URL or sessionStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id') || sessionStorage.getItem('selectedPatientProfile');
+      
+      if (!patientId) {
+        alert('No patient selected');
+        navigate('/doctor-dashboard');
+        return;
+      }
+
+      // Load patient from user management system
+      const patientData = getUserById(patientId);
+      
+      if (!patientData) {
+        alert('Patient not found');
+        navigate('/doctor-dashboard');
+        return;
+      }
+
+      setPatient(patientData);
+
+      // Load all related data from localStorage
+      const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+      const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+      const labReportsData = JSON.parse(localStorage.getItem('labReports') || '[]');
+      const vitalsData = JSON.parse(localStorage.getItem('patientVitals') || '[]');
+
+      // Filter data for this patient
+      const filteredMedicines = patientMedicines.filter(m => m.patientId === patientId);
+      const filteredAdherence = adherenceReports.filter(r => r.patientId === patientId);
+      const filteredLabs = labReportsData.filter(l => l.patientId === patientId);
+      const filteredVitals = vitalsData.filter(v => v.patientId === patientId);
+
+      // Calculate adherence
+      let adherenceRate = 0;
+      if (filteredAdherence.length > 0) {
+        const taken = filteredAdherence.filter(r => r.medicationTaken).length;
+        adherenceRate = Math.round((taken / filteredAdherence.length) * 100);
+      }
+
+      setAdherenceData({
+        rate: adherenceRate,
+        totalDoses: filteredAdherence.length,
+        takenDoses: filteredAdherence.filter(r => r.medicationTaken).length,
+        missedDoses: filteredAdherence.filter(r => !r.medicationTaken).length
+      });
+
+      // Format medications
+      const formattedMeds = filteredMedicines.map((med, index) => ({
+        id: `med-${index}`,
+        name: med.medicineList || 'Prescribed Medication',
+        dosage: med.dosage || '10mg',
+        frequency: med.frequency || 'Once daily',
+        prescribedDate: med.timestamp || new Date().toISOString(),
+        adherence: adherenceRate,
+        status: 'active'
+      }));
+
+      setMedications(formattedMeds);
+      setLabReports(filteredLabs);
+      setHealthLogs(filteredVitals);
+      setLoading(false);
+
+    } catch (error) {
+      console.error('Error loading patient data:', error);
+      alert('Error loading patient data');
+      navigate('/doctor-dashboard');
     }
-  ];
-
-  // Mock chat messages
-  const mockMessages = [
-    {
-      id: 'msg-001',
-      sender: 'Dr. Sarah Johnson',
-      avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face',
-      content: 'Hi John! How are you feeling today? I see you\'ve been consistent with your medication schedule.',
-      timestamp: '2025-01-08T08:30:00Z',
-      type: 'text'
-    },
-    {
-      id: 'msg-002',
-      sender: 'Rakesh Sharma',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-      content: 'Hi Dr. Johnson! I\'m feeling okay, though I\'ve been having some mild headaches in the mornings.',
-      timestamp: '2025-01-08T08:45:00Z',
-      type: 'text'
-    }
-  ];
-
-  const mockParticipants = [
-    {
-      id: 'user-001',
-      name: 'Dr. Sarah Johnson',
-      role: 'doctor',
-      avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face',
-      status: 'online'
-    },
-    {
-      id: 'user-002',
-      name: 'Rakesh Sharma',
-      role: 'patient',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
-      status: 'online'
-    }
-  ];
-
-  const breadcrumbItems = [
-    { label: 'Patients', path: '/doctor-dashboard' },
-    { label: patientInfo?.name || 'Loading...', clickable: false }
-  ];
+  };
 
   const tabs = [
-    { key: 'medications', label: 'Medications', icon: 'Pill', count: mockMedications?.length },
-    { key: 'lab-reports', label: 'Lab Reports', icon: 'FileText', count: mockLabReports?.length },
-    { key: 'health-logs', label: 'Health Logs', icon: 'BarChart3' },
-    { key: 'ai-suggestions', label: 'AI Suggestions', icon: 'Brain', count: mockAISuggestions?.length },
-    { key: 'messaging', label: 'Messages', icon: 'MessageCircle', count: 3 }
+    { id: 'overview', label: 'Overview', icon: 'User' },
+    { id: 'medications', label: 'Medications', icon: 'Pill', count: medications.length },
+    { id: 'labs', label: 'Lab Reports', icon: 'FileText', count: labReports.length },
+    { id: 'vitals', label: 'Health Logs', icon: 'Activity', count: healthLogs.length }
   ];
-
-  // Event handlers
-  const handleEditProfile = () => {
-    console.log('Edit profile clicked');
-  };
-
-  const handleSendMessage = () => {
-    setActiveTab('messaging');
-  };
-
-  const handleEmergencyContact = () => {
-    console.log('Emergency contact initiated');
-  };
-
-  const handleEditMedication = (medication) => {
-    console.log('Edit medication', medication);
-  };
-
-  const handleAddMedication = () => {
-    console.log('Add medication clicked');
-  };
-
-  const handleUploadReport = () => {
-    console.log('Upload report clicked');
-  };
-
-  const handleViewReport = (report) => {
-    console.log('View report', report);
-  };
-
-  const handleAddLog = () => {
-    console.log('Add health log clicked');
-  };
-
-  const handleAcceptSuggestion = (suggestion) => {
-    console.log('Accept suggestion', suggestion);
-  };
-
-  const handleDismissSuggestion = (suggestion) => {
-    console.log('Dismiss suggestion', suggestion);
-  };
-
-  const handleSendChatMessage = (message) => {
-    console.log('Send message', message);
-  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header userRole="doctor" userName="Dr. Sarah Johnson" />
-        <EmergencyAlertBanner userRole="doctor" alerts={mockAlerts} />
-        
-        <div className="pt-16">
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <div className="animate-pulse">
-              <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
-              <div className="bg-surface border border-border rounded-lg p-6 mb-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-20 bg-muted rounded-full"></div>
-                  <div className="flex-1 space-y-3">
-                    <div className="h-6 bg-muted rounded w-1/3"></div>
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="h-4 bg-muted rounded"></div>
-                      <div className="h-4 bg-muted rounded"></div>
-                      <div className="h-4 bg-muted rounded"></div>
-                      <div className="h-4 bg-muted rounded"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="h-96 bg-surface border border-border rounded-lg"></div>
-            </div>
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-secondary">Loading patient data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="AlertCircle" size={48} className="text-error mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-text-primary mb-2">Patient Not Found</h2>
+          <Button onClick={() => navigate('/doctor-dashboard')}>
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );
@@ -242,151 +134,265 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header userRole="doctor" userName="Dr. Sarah Johnson" />
-      <EmergencyAlertBanner userRole="doctor" alerts={mockAlerts} />
+      <Header />
       
-      <div className="pt-16">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          {/* Breadcrumb Navigation */}
-          <BreadcrumbNavigation 
-            items={breadcrumbItems}
-            userRole="doctor"
-            onBack={() => navigate('/doctor-dashboard')}
-          />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <BreadcrumbNavigation 
+          items={[
+            { label: 'Dashboard', path: '/doctor-dashboard' },
+            { label: 'Patients', path: '/doctor-dashboard?tab=patients' },
+            { label: patient.name, current: true }
+          ]} 
+          onBack={() => navigate('/doctor-dashboard')}
+        />
 
-          {/* Patient Header */}
-          <PatientHeader 
-            patient={patientInfo}
-            onEditProfile={handleEditProfile}
-            onSendMessage={handleSendMessage}
-            onEmergencyContact={handleEmergencyContact}
-          />
+        {/* Patient Header Card */}
+        <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Avatar */}
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                <span className="text-3xl font-bold text-primary">
+                  {patient.name?.charAt(0)}
+                </span>
+              </div>
 
-          {/* Tab Navigation */}
-          <div className="bg-surface border border-border rounded-lg mb-6">
-            <div className="border-b border-border">
-              <nav className="flex space-x-8 px-6">
-                {tabs?.map(tab => (
-                  <button
-                    key={tab?.key}
-                    onClick={() => setActiveTab(tab?.key)}
-                    className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-medical ${
-                      activeTab === tab?.key
-                        ? 'border-primary text-primary' 
-                        : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-                    }`}
-                  >
-                    <Icon name={tab?.icon} size={16} />
-                    <span>{tab?.label}</span>
-                    {tab?.count !== undefined && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        activeTab === tab?.key 
-                          ? 'bg-primary10 text-primary' 
-                          : 'bg-muted text-text-secondary'
-                      }`}>
-                        {tab?.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </nav>
+              {/* Patient Info */}
+              <div>
+                <h1 className="text-2xl font-bold text-text-primary">{patient.name}</h1>
+                <div className="flex items-center space-x-4 mt-2 text-sm text-text-secondary">
+                  <span>ID: {patient.patientId || patient.id}</span>
+                  <span>•</span>
+                  <span>{patient.age || 'N/A'} years</span>
+                  <span>•</span>
+                  <span className="capitalize">{patient.gender || 'N/A'}</span>
+                  <span>•</span>
+                  <span>Blood: {patient.bloodGroup || 'N/A'}</span>
+                </div>
+                <div className="flex items-center space-x-2 mt-2">
+                  <Icon name="Phone" size={14} className="text-text-secondary" />
+                  <span className="text-sm text-text-secondary">{patient.phone || 'N/A'}</span>
+                  <span className="mx-2">•</span>
+                  <Icon name="Mail" size={14} className="text-text-secondary" />
+                  <span className="text-sm text-text-secondary">{patient.email || 'N/A'}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="p-6">
-              {activeTab === 'medications' && (
-                <MedicationTimeline 
-                  medications={mockMedications}
-                  onEditMedication={handleEditMedication}
-                  onAddMedication={handleAddMedication}
-                />
-              )}
-              
-              {activeTab === 'lab-reports' && (
-                <LabReportsViewer 
-                  labReports={mockLabReports}
-                  onUploadReport={handleUploadReport}
-                  onViewReport={handleViewReport}
-                />
-              )}
-              
-              {activeTab === 'health-logs' && (
-                <HealthLogsChart 
-                  healthLogs={mockHealthLogs}
-                  onAddLog={handleAddLog}
-                />
-              )}
-              
-              {activeTab === 'ai-suggestions' && (
-                <AISuggestions 
-                  suggestions={mockAISuggestions}
-                  onAcceptSuggestion={handleAcceptSuggestion}
-                  onDismissSuggestion={handleDismissSuggestion}
-                />
-              )}
-              
-              {activeTab === 'messaging' && (
-                <ChatMessaging 
-                  messages={mockMessages}
-                  participants={mockParticipants}
-                  currentUser={{ name: 'Dr. Sarah Johnson', role: 'doctor' }}
-                  onSendMessage={handleSendChatMessage}
-                />
-              )}
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                iconName="MessageCircle"
+                onClick={() => {
+                  sessionStorage.setItem('selectedPatientId', patient.id);
+                  navigate('/doctor-dashboard?tab=messages');
+                }}
+              >
+                Message
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                iconName="Phone"
+                onClick={() => alert(`Calling ${patient.name}...`)}
+              >
+                Call
+              </Button>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/doctor-dashboard')}
-              iconName="ArrowLeft"
-              iconPosition="left"
-            >
-              Back to Dashboard
-            </Button>
-            
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline"
-                className="h-16 justify-start"
-                iconName="Calendar"
-                iconPosition="left"
-                onClick={() => console.log('Schedule appointment')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">Schedule Follow-up</div>
-                  <div className="text-sm text-text-secondary">Next appointment</div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className="h-16 justify-start"
-                iconName="FileText"
-                iconPosition="left"
-                onClick={() => console.log('Generate report')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">Generate Report</div>
-                  <div className="text-sm text-text-secondary">Patient summary</div>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className="h-16 justify-start"
-                iconName="Share"
-                iconPosition="left"
-                onClick={() => console.log('Share profile')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">Share Profile</div>
-                  <div className="text-sm text-text-secondary">With care team</div>
-                </div>
-              </Button>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-border">
+            <div className="text-center">
+              <Icon name="Pill" size={20} className="text-primary mx-auto mb-1" />
+              <div className="text-2xl font-bold text-text-primary">{medications.length}</div>
+              <div className="text-xs text-text-secondary">Medications</div>
             </div>
+            <div className="text-center">
+              <Icon name="TrendingUp" size={20} className="text-success mx-auto mb-1" />
+              <div className="text-2xl font-bold text-text-primary">
+                {adherenceData?.rate || 0}%
+              </div>
+              <div className="text-xs text-text-secondary">Adherence</div>
+            </div>
+            <div className="text-center">
+              <Icon name="FileText" size={20} className="text-warning mx-auto mb-1" />
+              <div className="text-2xl font-bold text-text-primary">{labReports.length}</div>
+              <div className="text-xs text-text-secondary">Lab Reports</div>
+            </div>
+            <div className="text-center">
+              <Icon name="Activity" size={20} className="text-error mx-auto mb-1" />
+              <div className="text-2xl font-bold text-text-primary">{healthLogs.length}</div>
+              <div className="text-xs text-text-secondary">Vital Readings</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="border-b border-border">
+            <nav className="flex space-x-8 px-6">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm transition-medical ${
+                    activeTab === tab.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <Icon name={tab.icon} size={16} />
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          <div className="p-6">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Adherence Card */}
+                  <div className="bg-muted/30 rounded-lg p-6">
+                    <h3 className="font-semibold text-text-primary mb-4">Medication Adherence</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-text-secondary">Taken</span>
+                        <span className="font-medium text-success">{adherenceData?.takenDoses || 0} doses</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-text-secondary">Missed</span>
+                        <span className="font-medium text-error">{adherenceData?.missedDoses || 0} doses</span>
+                      </div>
+                      <div className="w-full bg-background rounded-full h-3 mt-4">
+                        <div
+                          className="bg-success h-3 rounded-full transition-all"
+                          style={{ width: `${adherenceData?.rate || 0}%` }}
+                        />
+                      </div>
+                      <div className="text-center text-2xl font-bold text-text-primary">
+                        {adherenceData?.rate || 0}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div className="bg-muted/30 rounded-lg p-6">
+                    <h3 className="font-semibold text-text-primary mb-4">Recent Activity</h3>
+                    <div className="space-y-3">
+                      {healthLogs.slice(0, 5).map((log, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <span className="text-text-secondary">Vitals Synced</span>
+                          <span className="text-text-primary">
+                            {new Date(log.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                      {healthLogs.length === 0 && (
+                        <p className="text-text-secondary text-center py-4">No recent activity</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'medications' && (
+              <div>
+                {medications.length > 0 ? (
+                  <div className="space-y-4">
+                    {medications.map(med => (
+                      <div key={med.id} className="bg-muted/30 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-text-primary">{med.name}</h4>
+                            <p className="text-sm text-text-secondary mt-1">
+                              {med.dosage} - {med.frequency}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-primary">{med.adherence}%</div>
+                            <div className="text-xs text-text-secondary">Adherence</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Icon name="Pill" size={48} className="text-text-secondary/30 mx-auto mb-3" />
+                    <p className="text-text-secondary">No medications found</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'labs' && (
+              <div>
+                {labReports.length > 0 ? (
+                  <div className="space-y-4">
+                    {labReports.map((report, index) => (
+                      <div key={index} className="bg-muted/30 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-text-primary">Lab Report</h4>
+                            <p className="text-sm text-text-secondary mt-1">
+                              {new Date(report.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button variant="ghost" size="sm" iconName="Eye">
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Icon name="FileText" size={48} className="text-text-secondary/30 mx-auto mb-3" />
+                    <p className="text-text-secondary">No lab reports found</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'vitals' && (
+              <div>
+                {healthLogs.length > 0 ? (
+                  <div className="space-y-4">
+                    {healthLogs.map((log, index) => (
+                      <div key={index} className="bg-muted/30 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-text-primary">Vital Signs</h4>
+                            <p className="text-sm text-text-secondary mt-1">
+                              {new Date(log.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right text-sm">
+                            {log.data?.heartRate && <div>HR: {log.data.heartRate} bpm</div>}
+                            {log.data?.oxygenSaturation && <div>SpO2: {log.data.oxygenSaturation}%</div>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Icon name="Activity" size={48} className="text-text-secondary/30 mx-auto mb-3" />
+                    <p className="text-text-secondary">No vital signs data found</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
