@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../contexts/AuthContext';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
+const HealthLogger = ({ onLogSubmit }) => {
+  const { user } = useAuth(); // ✅ GET LOGGED-IN USER
   const [activeTab, setActiveTab] = useState('vitals');
   const [vitalsData, setVitalsData] = useState({
     bloodPressureSystolic: '',
@@ -22,6 +24,9 @@ const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
   const [fetchingFitData, setFetchingFitData] = useState(false);
   const [fitData, setFitData] = useState({});
   const [autoSync, setAutoSync] = useState(false);
+
+  // ✅ GET PATIENT ID FROM LOGGED-IN USER
+  const patientId = user?.id || 'guest';
 
   // Check environment variables on mount
   useEffect(() => {
@@ -280,49 +285,30 @@ const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
     }
   };
 
-  // ENHANCED: Emergency alerts with priority levels
-  const sendEmergencyAlertsToDoctor = (alerts) => {
-    alerts.forEach(alert => {
-      const doctorAlert = {
-        id: Date.now() + Math.random(),
-        type: 'patient_vitals',
-        priority: alert.severity,
-        title: alert.severity === 'critical' ? 'CRITICAL - Patient Vital Alert' : 'Patient Vital Alert',
-        message: `${patientId}: ${alert.message}`,
-        patientId,
-        timestamp: new Date().toISOString(),
-        active: true,
-        vitalsData: fitData,
-        actionRequired: alert.severity === 'critical'
-      };
+const sendEmergencyAlertsToDoctor = (alerts) => {
+  alerts.forEach(alert => {
+    const doctorAlert = {
+      id: Date.now() + Math.random(),
+      type: 'patient_vitals',
+      priority: alert.severity,
+      title: alert.severity === 'critical' ? 'CRITICAL - Patient Vital Alert' : 'Patient Vital Alert',
+      message: `${user?.name || patientId}: ${alert.message}`,
+      patientId,
+      timestamp: new Date().toISOString(),
+      active: true,
+      vitalsData: fitData,
+      actionRequired: alert.severity === 'critical'
+    };
 
-      // Save to doctor alerts
-      const doctorAlerts = JSON.parse(localStorage.getItem('doctorAlerts') || '[]');
-      doctorAlerts.push(doctorAlert);
-      localStorage.setItem('doctorAlerts', JSON.stringify(doctorAlerts));
+    const doctorAlerts = JSON.parse(localStorage.getItem('doctorAlerts') || '[]');
+    doctorAlerts.push(doctorAlert);
+    localStorage.setItem('doctorAlerts', JSON.stringify(doctorAlerts));
 
-      // Show user notification for critical alerts
-      if (alert.severity === 'critical') {
-        if (Notification.permission === 'granted') {
-          new Notification('Critical Health Alert', {
-            body: alert.message,
-            icon: '/favicon.ico',
-            requireInteraction: true
-          });
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              new Notification('Critical Health Alert', {
-                body: alert.message,
-                icon: '/favicon.ico',
-                requireInteraction: true
-              });
-            }
-          });
-        }
-      }
-    });
-  };
+    // ✅ REMOVED: All the Notification.permission and new Notification() code
+    console.log('Alert saved silently');
+  });
+};
+
 
   // ENHANCED: Mock data function for testing without Google Fit
   const useMockGoogleFitData = () => {
@@ -350,10 +336,15 @@ const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
     alert('Mock Google Fit data loaded! You can now test the vitals system.');
   };
 
-  // Save vitals to backend/localStorage with enhanced data
+  // ✅ FIXED: Save vitals to backend/localStorage with REAL patient ID
   const handleSubmit = (type) => {
+    if (!user || user.role !== 'patient') {
+      alert('You must be logged in as a patient to log vitals');
+      return;
+    }
+
     const timestamp = new Date().toISOString();
-    let logData = { type, timestamp, patientId };
+    let logData = { type, timestamp, patientId }; // ✅ Uses real patient ID
 
     switch (type) {
       case 'vitals':
@@ -361,13 +352,27 @@ const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
           ...logData, 
           data: vitalsData, 
           source: googleFitConnected ? 'google_fit_enhanced' : 'manual_entry',
-          googleFitData: googleFitConnected ? fitData : null
+          googleFitData: googleFitConnected ? fitData : null,
+          // ✅ Add individual vital fields for easier doctor access
+          bloodPressure: vitalsData.bloodPressureSystolic && vitalsData.bloodPressureDiastolic
+            ? `${vitalsData.bloodPressureSystolic}/${vitalsData.bloodPressureDiastolic}`
+            : 'N/A',
+          heartRate: vitalsData.heartRate || 'N/A',
+          temperature: vitalsData.temperature || 'N/A',
+          weight: vitalsData.weight || 'N/A',
+          bloodSugar: vitalsData.bloodSugar || 'N/A',
+          oxygenLevel: vitalsData.oxygenSaturation || 'N/A',
+          steps: vitalsData.steps || 'N/A',
+          date: new Date().toLocaleDateString(),
+          id: `vital_${Date.now()}`
         };
         
         // Save to patient vitals history
         const vitalsHistory = JSON.parse(localStorage.getItem('patientVitals') || '[]');
         vitalsHistory.push(logData);
         localStorage.setItem('patientVitals', JSON.stringify(vitalsHistory));
+        
+        console.log('✅ Vitals saved with patient ID:', patientId, logData);
         
         // Reset form
         setVitalsData({
@@ -685,6 +690,8 @@ const HealthLogger = ({ onLogSubmit, patientId = 'patient_123' }) => {
         <p className="text-sm text-text-secondary mt-1">
           Track your vitals with Google Fit integration and manual entry
         </p>
+        {/* ✅ Show current user for debugging */}
+        <p className="text-xs text-gray-500 mt-1">Logged in as: {user?.name} (ID: {patientId})</p>
       </div>
 
       {/* Tab Navigation */}

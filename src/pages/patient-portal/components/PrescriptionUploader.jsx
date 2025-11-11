@@ -40,37 +40,51 @@ export default function PrescriptionUploader({ patientId }) {
   };
 
   // ✅ Convert structured meds → reminders
-  const buildSmartReminders = (meds, patientId) => {
-    const reminders = [];
+// Convert structured meds to reminders
+const buildSmartReminders = (meds, patientId) => {
+  const reminders = [];
 
-    meds.forEach((m, i) => {
-      const timings = m.timings?.length ? m.timings : ["morning"];
-      const freq =
-        timings.length === 1
-          ? "once daily"
-          : timings.length === 2
-          ? "twice daily"
-          : timings.length === 3
-          ? "three times daily"
-          : `${timings.length} times daily`;
+  meds.forEach((m, i) => {
+    // ✅ FIX: Ensure timings is always an array
+    let timings = m.timings;
+    
+    // Convert string to array if needed
+    if (typeof timings === 'string') {
+      timings = [timings];
+    }
+    
+    // Default to morning if no timings provided
+    if (!timings || timings.length === 0) {
+      timings = ['morning'];
+    }
 
-      timings.forEach((t, idx) => {
-        reminders.push({
-          id: Date.now() + i * 1000 + idx,
-          patientId,
-          medicineName: m.name,
-          dosage: m.dosage || "1 tablet",
-          timing: t,
-          frequency: freq,
-          instructions: m.notes || (m.food ? `Take ${m.food} food` : "as directed"),
-          status: "pending",
-          createdAt: new Date().toISOString(),
-        });
+    const freq =
+      timings.length === 1
+        ? 'once daily'
+        : timings.length === 2
+        ? 'twice daily'
+        : timings.length === 3
+        ? 'three times daily'
+        : `${timings.length} times daily`;
+
+    // ✅ Now this won't crash
+    timings.forEach((t, idx) => {
+      reminders.push({
+        id: Date.now() + i * 1000 + idx,
+        patientId,
+        medicineName: m.name,
+        dosage: m.dosage || '1 tablet',
+        timing: t,
+        frequency: freq,
+        instructions: m.notes || (m.food ? `Take ${m.food} food` : 'as directed'),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
       });
     });
+  });
 
-    return reminders;
-  };
+  return reminders;
+};
 
   // ✅ MAIN logic
   const handleAnalyzeAndCreateReminders = async (prescriptionFile) => {

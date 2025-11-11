@@ -193,6 +193,16 @@ const DoctorDashboardOverview = ({
                 <p className="text-sm text-text-secondary mt-0.5">
                   {realAlerts.length} alert{realAlerts.length !== 1 ? 's' : ''}
                 </p>
+                <button
+      onClick={() => {
+        localStorage.setItem('doctorAlerts', '[]');
+        window.location.reload();
+      }}
+      className="px-3 py-1 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded font-medium"
+      disabled={realAlerts.length === 0}
+    >
+      Clear All
+    </button>
               </div>
               {realAlerts.length > 0 && (
                 <div className="w-2 h-2 bg-error rounded-full animate-pulse" />

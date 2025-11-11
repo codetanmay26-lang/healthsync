@@ -40,34 +40,119 @@ const DoctorDashboard = () => {
     }
   }, []);
 
+  // ✅ COMPREHENSIVE ADHERENCE CALCULATION
+  const calculateComprehensiveAdherence = (patientId) => {
+    const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+    const labReports = JSON.parse(localStorage.getItem('labReports') || '[]');
+    const patientVitals = JSON.parse(localStorage.getItem('patientVitals') || '[]');
+    
+    const patientAdherence = adherenceReports.filter(r => r.patientId === patientId);
+    const patientLabs = labReports.filter(lab => lab.patientId === patientId);
+    const patientHealthData = patientVitals.filter(vital => vital.patientId === patientId);
+    
+    let totalScore = 0;
+    let weights = 0;
+    
+    // Medication adherence (weight: 50%)
+    if (patientAdherence.length > 0) {
+      const taken = patientAdherence.filter(r => r.medicationTaken === true).length;
+      const medAdherence = (taken / patientAdherence.length) * 100;
+      totalScore += medAdherence * 0.5;
+      weights += 0.5;
+    }
+    
+    // Lab reports submitted (weight: 25%)
+    if (patientLabs.length > 0) {
+      const labScore = Math.min(100, (patientLabs.length / 2) * 100); // 2+ labs = 100%
+      totalScore += labScore * 0.25;
+      weights += 0.25;
+    }
+    
+    // Vitals logged (weight: 25%)
+    if (patientHealthData.length > 0) {
+      const vitalsScore = Math.min(100, (patientHealthData.length / 5) * 100); // 5+ vitals = 100%
+      totalScore += vitalsScore * 0.25;
+      weights += 0.25;
+    }
+    
+    // Calculate final adherence rate
+    const finalAdherence = weights > 0 ? Math.round(totalScore / weights) : 0;
+    
+    return {
+      adherenceRate: finalAdherence,
+      medicationAdherence: patientAdherence.length > 0 ? Math.round((patientAdherence.filter(r => r.medicationTaken).length / patientAdherence.length) * 100) : 0,
+      labReportsCount: patientLabs.length,
+      vitalsCount: patientHealthData.length
+    };
+  };
+
   // Load REAL patient data assigned to this doctor
   useEffect(() => {
     if (user && user.role === 'doctor') {
       // Get only patients assigned to THIS doctor from user management system
       const assignedPatients = getDoctorPatients(user.id);
       
-      // Calculate real adherence for each patient
+      // Build comprehensive patient data
       const patientsWithData = assignedPatients.map(patient => {
-        const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
-        const patientReports = adherenceReports.filter(r => r.patientId === patient.id);
+        // ✅ Use patient.id consistently for ALL filtering
+        const patientId = patient.id;
         
-        let adherenceRate = 0;
-        if (patientReports.length > 0) {
-          const taken = patientReports.filter(r => r.medicationTaken === true).length;
-          adherenceRate = Math.round((taken / patientReports.length) * 100);
+        // Get all data sources
+        const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+        const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+        const labReports = JSON.parse(localStorage.getItem('labReports') || '[]');
+        const patientVitals = JSON.parse(localStorage.getItem('patientVitals') || '[]');
+        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+        
+        // Filter data for THIS specific patient
+        const patientAdherence = adherenceReports.filter(r => r.patientId === patientId);
+        const medications = patientMedicines.filter(m => m.patientId === patientId);
+        const patientLabs = labReports.filter(lab => lab.patientId === patientId);
+        const patientHealthData = patientVitals.filter(vital => vital.patientId === patientId);
+        const patientAppointments = appointments.filter(apt => apt.patientId === patientId);
+        
+        // ✅ Calculate comprehensive adherence (medications + labs + vitals)
+        const adherenceData = calculateComprehensiveAdherence(patientId);
+        const adherenceRate = adherenceData.adherenceRate;
+        
+        // Determine compliance status and risk level
+        let complianceStatus = 'Good';
+        let riskLevel = 'Low';
+        
+        if (adherenceRate < 50) {
+          complianceStatus = 'Poor';
+          riskLevel = 'High';
+        } else if (adherenceRate < 70) {
+          complianceStatus = 'Fair';
+          riskLevel = 'Medium';
+        } else if (adherenceRate >= 90) {
+          complianceStatus = 'Excellent';
+          riskLevel = 'Low';
         }
         
-        // Get medication data
-        const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
-        const medications = patientMedicines.filter(m => m.patientId === patient.id);
+        console.log(`✅ Patient ${patient.name} (ID: ${patientId}):`, {
+          medications: medications.length,
+          labs: patientLabs.length,
+          vitals: patientHealthData.length,
+          comprehensiveAdherence: adherenceRate,
+          medicationAdherence: adherenceData.medicationAdherence
+        });
         
         return {
           ...patient,
           adherenceRate,
-          complianceStatus: adherenceRate >= 70 ? 'Good' : 'Poor',
-          riskLevel: adherenceRate >= 70 ? 'Low' : adherenceRate >= 50 ? 'Medium' : 'High',
+          medicationAdherence: adherenceData.medicationAdherence,
+          complianceStatus,
+          riskLevel,
           lastActivity: new Date().toISOString(),
+          currentMedications: medications.length,
           medications: medications.map(med => med.medicineList || 'Prescribed medication'),
+          labReports: patientLabs,
+          vitals: patientHealthData,
+          appointments: patientAppointments,
+          labReportsCount: patientLabs.length,
+          vitalsCount: patientHealthData.length,
+          appointmentsCount: patientAppointments.length,
           contactInfo: {
             phone: patient.phone || 'N/A',
             email: patient.email || 'N/A'
@@ -77,16 +162,17 @@ const DoctorDashboard = () => {
       
       setPatients(patientsWithData);
       
-      // Generate alerts for low adherence patients
+      // Generate comprehensive alerts for all data types
       const alerts = [];
       patientsWithData.forEach(patient => {
+        // Low comprehensive adherence alert
         if (patient.adherenceRate < 70 && patient.adherenceRate > 0) {
           alerts.push({
-            id: `alert-${patient.id}`,
+            id: `alert-adherence-${patient.id}`,
             type: 'medication',
             priority: patient.adherenceRate < 50 ? 'critical' : 'high',
-            title: 'Medication Adherence Alert',
-            message: `${patient.name} has ${patient.adherenceRate}% medication adherence rate`,
+            title: 'Overall Adherence Alert',
+            message: `${patient.name} has ${patient.adherenceRate}% overall adherence (medications, labs, vitals)`,
             patientName: patient.name,
             patientId: patient.patientId || patient.id,
             timestamp: new Date().toISOString(),
@@ -98,12 +184,10 @@ const DoctorDashboard = () => {
           });
         }
         
-        // Check for missed appointments
-        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        const missedAppointments = appointments.filter(apt => 
-          apt.patientId === patient.id && 
+        // Missed appointments
+        const missedAppointments = patient.appointments.filter(apt => 
           apt.status === 'missed' &&
-          new Date(apt.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+          new Date(apt.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         );
         
         if (missedAppointments.length > 0) {
@@ -121,6 +205,38 @@ const DoctorDashboard = () => {
             actions: [
               { type: 'schedule-appointment', label: 'Schedule Follow-up', primary: true }
             ]
+          });
+        }
+        
+        // No lab reports
+        if (patient.labReportsCount === 0) {
+          alerts.push({
+            id: `alert-no-labs-${patient.id}`,
+            type: 'lab',
+            priority: 'medium',
+            title: 'No Lab Reports',
+            message: `${patient.name} has no lab reports uploaded`,
+            patientName: patient.name,
+            patientId: patient.patientId || patient.id,
+            timestamp: new Date().toISOString(),
+            active: true,
+            roles: ['doctor', 'admin']
+          });
+        }
+        
+        // No vitals data
+        if (patient.vitalsCount === 0) {
+          alerts.push({
+            id: `alert-no-vitals-${patient.id}`,
+            type: 'vitals',
+            priority: 'medium',
+            title: 'No Vitals Data',
+            message: `${patient.name} has not logged any health vitals`,
+            patientName: patient.name,
+            patientId: patient.patientId || patient.id,
+            timestamp: new Date().toISOString(),
+            active: true,
+            roles: ['doctor', 'admin']
           });
         }
       });
@@ -163,7 +279,7 @@ const DoctorDashboard = () => {
   const summaryMetrics = useMemo(() => {
     const totalPatients = patients.length;
     
-    // Calculate average adherence across all patients
+    // Calculate average comprehensive adherence
     let overallAdherence = 0;
     if (patients.length > 0) {
       const totalAdherence = patients.reduce((sum, p) => sum + (p.adherenceRate || 0), 0);
@@ -183,10 +299,10 @@ const DoctorDashboard = () => {
       },
       {
         id: 'overall-adherence',
-        title: 'Average Adherence',
+        title: 'Overall Adherence',
         value: overallAdherence,
         unit: '%',
-        description: 'Real medication adherence from reports',
+        description: 'Medications, labs, and vitals combined',
         trend: overallAdherence >= 70 ? 'up' : overallAdherence >= 50 ? 'stable' : 'down'
       },
       {
@@ -237,11 +353,9 @@ const DoctorDashboard = () => {
   const handleMetricClick = (metric) => {
     console.log(`Metric clicked: ${metric.id}`);
     
-    // Navigate based on metric type
     if (metric.id === 'total-patients') {
       setActiveTab('patients');
     } else if (metric.id === 'active-alerts') {
-      // Scroll to alerts panel or open alerts
       const alertsPanel = document.querySelector('[data-component="emergency-alerts"]');
       if (alertsPanel) {
         alertsPanel.scrollIntoView({ behavior: 'smooth' });
@@ -292,7 +406,7 @@ const DoctorDashboard = () => {
             Doctor Dashboard
           </h1>
           <p className="text-text-secondary">
-            {user?.name ? `Welcome back, ${user.name}` : 'Monitor patient adherence and vitals'} • Real-time data from assigned patients
+            {user?.name ? `Welcome back, ${user.name}` : 'Monitor patient adherence and vitals'} • Comprehensive health tracking
           </p>
         </div>
 
@@ -318,7 +432,6 @@ const DoctorDashboard = () => {
 
         {/* Tab Content */}
         <div className="space-y-6">
-          {/* Overview Tab - NEW CLEAN DESIGN */}
           {activeTab === 'overview' && (
             <DoctorDashboardOverview
               patients={patients}
@@ -333,7 +446,6 @@ const DoctorDashboard = () => {
             />
           )}
 
-          {/* Patients Tab */}
           {activeTab === 'patients' && (
             <div className="bg-surface border border-border rounded-lg">
               <div className="p-6 border-b border-border">
@@ -370,12 +482,8 @@ const DoctorDashboard = () => {
             </div>
           )}
 
-          {/* Messages Tab */}
-          {activeTab === 'messages' && (
-            <DoctorMessaging />
-          )}
+          {activeTab === 'messages' && <DoctorMessaging />}
 
-          {/* Vitals Tab */}
           {activeTab === 'vitals' && (
             <div className="space-y-6">
               {filteredPatients.length > 0 ? (
@@ -396,15 +504,9 @@ const DoctorDashboard = () => {
             </div>
           )}
 
-          {/* Reports Tab */}
-          {activeTab === 'reports' && (
-            <AnalysisReportsPanel />
-          )}
+          {activeTab === 'reports' && <AnalysisReportsPanel />}
 
-          {/* Analytics Tab - Real-Time Patient Risk Analytics */}
-          {activeTab === 'analytics' && (
-            <PatientAnalyticsRealTime />
-          )}
+          {activeTab === 'analytics' && <PatientAnalyticsRealTime />}
         </div>
       </div>
     </div>
