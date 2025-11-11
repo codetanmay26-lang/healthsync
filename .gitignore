@@ -1,0 +1,9 @@
+.DS_Store
+node_modules
+.idea
+/build
+.vscode/
+.idea/
+vite.config.*s.*
+dist/
+test-notation-parser.js

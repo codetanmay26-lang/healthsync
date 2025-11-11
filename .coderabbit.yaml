@@ -1,0 +1,59 @@
+# CodeRabbit Configuration for HealthSync
+# Documentation: https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: en-US
+early_access: false
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Focus areas for HealthSync project
+  path_instructions:
+    - path: "src/pages/**/*.jsx"
+      instructions: |
+        - Check for proper React hooks usage
+        - Verify localStorage usage is consistent with project patterns
+        - Ensure proper error handling in async operations
+        - Check for accessibility issues in patient/doctor interfaces
+
+    - path: "src/utils/**/*.js"
+      instructions: |
+        - Verify Gemini API calls include proper error handling
+        - Check for API key security (no hardcoded keys)
+        - Ensure medical data processing is HIPAA-aware
+
+    - path: "src/components/**/*.jsx"
+      instructions: |
+        - Check component reusability
+        - Verify Tailwind classes follow project conventions
+        - Ensure proper prop validation
+
+    - path: "src/contexts/**/*.jsx"
+      instructions: |
+        - Check for proper context provider patterns
+        - Verify state management efficiency
+        - Check for memory leaks in useEffect hooks
+
+  # Auto-approve simple changes
+  auto_approve:
+    enabled: false
+
+chat:
+  auto_reply: true
+
+# Ignore certain files/patterns
+ignore:
+  - "dist/**"
+  - "node_modules/**"
+  - "*.md"
+  - "package-lock.json"
+  - "*.config.js"
+  - "*.config.mjs"

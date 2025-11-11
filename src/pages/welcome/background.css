@@ -1,0 +1,49 @@
+/* src/pages/welcome/background.css */
+.body-gradient {
+  background: linear-gradient(135deg, #e0f2fe, #e6fffa);
+  cursor: none; /* Hide the default cursor for the entire page */
+}
+
+/* Apply custom cursor to all elements within the page */
+.body-gradient * {
+  cursor: none;
+}
+
+/* Custom animated stethoscope cursor (no pulse) */
+#custom-cursor {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-out;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.pulse-animation {
+  animation: card-pulse 2s infinite;
+}
+
+@keyframes card-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
