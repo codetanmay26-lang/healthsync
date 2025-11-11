@@ -102,11 +102,13 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 ## ▸ Project Structure
 
 ```
-medicalsyc-2-main
+healthsync-main
+├─ .coderabbit.yaml
 ├─ .env
 ├─ favicon.ico
 ├─ index.html
 ├─ jsconfig.json
+├─ package-lock.json
 ├─ package.json
 ├─ postcss.config.js
 ├─ public
@@ -147,13 +149,16 @@ medicalsyc-2-main
 │  │  │  │  ├─ MetricsOverview.jsx
 │  │  │  │  ├─ PredictiveAnalytics.jsx
 │  │  │  │  ├─ SystemStatusPanel.jsx
+│  │  │  │  ├─ UserManagement.jsx
 │  │  │  │  └─ UserManagementPanel.jsx
 │  │  │  └─ index.jsx
 │  │  ├─ doctor-dashboard
 │  │  │  ├─ components
 │  │  │  │  ├─ AnalysisReportsPanel.jsx
+│  │  │  │  ├─ DoctorMessaging.jsx
 │  │  │  │  ├─ EmergencyAlertsPanel.jsx
 │  │  │  │  ├─ FilterControls.jsx
+│  │  │  │  ├─ PatientAnalyticsRealTime.jsx
 │  │  │  │  ├─ PatientListTable.jsx
 │  │  │  │  ├─ PatientVitalsPanel.jsx
 │  │  │  │  ├─ QuickActionsPanel.jsx
@@ -202,20 +207,26 @@ medicalsyc-2-main
 │  │     ├─ CustomCursor.jsx
 │  │     └─ index.jsx
 │  ├─ Routes.jsx
+│  ├─ services
+│  │  ├─ localStorageUserManagement.js
+│  │  └─ realTimeAnalytics.js
 │  ├─ styles
 │  │  ├─ index.css
 │  │  └─ tailwind.css
+│  ├─ test
+│  │  ├─ app.test.jsx
+│  │  └─ setup.js
 │  └─ utils
 │     ├─ aiAnalysis.js
 │     ├─ cn.js
 │     └─ prescriptionAnalysis.js
 ├─ tailwind.config.js
+├─ TESTING.md
 ├─ vercel.json
-└─ vite.config.mjs
+├─ vite.config.mjs
+└─ vitest.config.mjs
+
 ```
-
-
-
 ## ▸ Achievements
 
 - Addresses WHO SDG 3: Good Health & Well-being

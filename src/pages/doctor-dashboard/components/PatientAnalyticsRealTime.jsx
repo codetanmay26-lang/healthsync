@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { useAuth } from '../../../contexts/AuthContext'; 
 import { getAllPatientsWithRiskScores } from '../../../services/realTimeAnalytics';
 
 const PatientAnalyticsRealTime = () => {
+  const { user } = useAuth();
   const [analyticsData, setAnalyticsData] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -12,11 +14,16 @@ const PatientAnalyticsRealTime = () => {
 
   // Real-time calculation function
   const calculateRealTimeAnalytics = useCallback(() => {
+    if (!user || user.role !== 'doctor') {
+      console.log('No doctor user found');
+      return;
+    }
+    
     setIsCalculating(true);
     
     try {
-      // Calculate from REAL data only - no mocks
-      const realTimeData = getAllPatientsWithRiskScores();
+      // Pass doctor ID to get only their assigned patients
+      const realTimeData = getAllPatientsWithRiskScores(user.id);
       setAnalyticsData(realTimeData);
       setLastRefresh(new Date());
     } catch (error) {
@@ -24,7 +31,7 @@ const PatientAnalyticsRealTime = () => {
     } finally {
       setIsCalculating(false);
     }
-  }, []);
+  }, [user]);
 
   // Initial calculation
   useEffect(() => {
@@ -361,18 +368,22 @@ const PatientAnalyticsRealTime = () => {
               >
                 Call Patient
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                iconName="MessageSquare" 
-                iconPosition="left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  alert(`Opening chat with ${data.patient.name}...`);
-                }}
-              >
-                Send Message
-              </Button>
+<Button 
+  variant="outline" 
+  size="sm" 
+  iconName="MessageSquare" 
+  iconPosition="left"
+  onClick={(e) => {
+    e.stopPropagation();
+    // Store selected patient in sessionStorage for messages tab
+    sessionStorage.setItem('selectedPatientForMessaging', data.patient.id);
+    // Navigate to messages tab
+    window.dispatchEvent(new CustomEvent('switchTab', { detail: { tab: 'messages' } }));
+  }}
+>
+  Send Message
+</Button>
+
               <Button 
                 variant="outline" 
                 size="sm" 

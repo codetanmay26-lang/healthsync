@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import BreadcrumbNavigation from '../../components/ui/BreadcrumbNavigation';
+import { getDoctorPatients } from '../../services/localStorageUserManagement';
 import EmergencyAlertBanner from '../../components/ui/EmergencyAlertBanner';
 import Header from '../../components/ui/Header';
+import DoctorMessaging from './components/DoctorMessaging';
 import SummaryMetricsCards from './components/SummaryMetricsCards';
 import FilterControls from './components/FilterControls';
 import PatientListTable from './components/PatientListTable';
 import EmergencyAlertsPanel from './components/EmergencyAlertsPanel';
-import PatientAnalyticsRealTime from './components/PatientAnalyticsRealTime'
+import PatientAnalyticsRealTime from './components/PatientAnalyticsRealTime';
 import PatientVitalsPanel from './components/PatientVitalsPanel'; 
 import AnalysisReportsPanel from './components/AnalysisReportsPanel';
 import QuickActionsPanel from './components/QuickActionsPanel';
@@ -16,11 +18,14 @@ import Icon from '../../components/AppIcon';
 const DoctorDashboard = () => {
   const { user, isLoading } = useAuth();
 
-  // Add active tab state for navigation
-  const [activeTab, setActiveTab] = useState('overview');
+  // Tab state - Check URL parameter for initial tab
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'overview';
+  });
 
-  // Real patient data - only one patient
-  const [realPatients, setRealPatients] = useState([]);
+  // Patient and alert state
+  const [patients, setPatients] = useState([]);
   const [realAlerts, setRealAlerts] = useState([]);
   const [selectedPatients, setSelectedPatients] = useState([]);
   const [filters, setFilters] = useState({
@@ -30,121 +35,193 @@ const DoctorDashboard = () => {
     dateRange: { start: '', end: '' }
   });
 
-  // Load real patient data
+  // Load REAL patient data assigned to this doctor
   useEffect(() => {
-    // Get real data from localStorage
-    const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
-    const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
-    
-    // Filter for our one real patient
-    const patientId = 'patient_123'; // Updated to match your patient portal
-    const realMedicines = patientMedicines.filter(med => med.patientId === patientId);
-    const patientAdherence = adherenceReports.filter(report => report.patientId === patientId);
-    
-    // Calculate real adherence rate
-    let adherenceRate = 0;
-    if (patientAdherence.length > 0) {
-      const taken = patientAdherence.filter(report => report.medicationTaken).length;
-      adherenceRate = Math.round((taken / patientAdherence.length) * 100);
-    }
-    
-    // Create real patient object
-    const realPatient = {
-      id: 'patient_123', // Updated to match
-      patientId: 'PT-2024-001',
-      name: 'Rakesh Sharma',
-      age: 45,
-      gender: 'Male',
-      dischargeDate: '2024-01-15',
-      adherenceRate: adherenceRate,
-      complianceStatus: adherenceRate >= 70 ? 'Good' : 'Poor',
-      riskLevel: adherenceRate >= 70 ? 'Low' : 'High',
-      lastActivity: new Date().toISOString(),
-      medications: realMedicines.map(med => med.medicineList || 'Prescribed medication'),
-      contactInfo: {
-        phone: '+1 555 123-4567',
-        email: 'john.doe@email.com'
-      }
-    };
-
-    setRealPatients([realPatient]);
-
-    // Generate real alerts only if there are issues
-    const alerts = [];
-    if (adherenceRate < 70 && adherenceRate > 0) {
-      alerts.push({
-        id: 'real-alert-001',
-        type: 'medication',
-        priority: adherenceRate < 50 ? 'critical' : 'high',
-        title: 'Medication Adherence Alert',
-        message: `${realPatient.name} has ${adherenceRate}% medication adherence rate`,
-        patientName: realPatient.name,
-        patientId: realPatient.patientId,
-        timestamp: new Date().toISOString(),
-        active: true,
-        roles: ['doctor', 'admin'],
-        actions: [
-          { type: 'call-patient', label: 'Call Patient', primary: true }
-        ]
+    if (user && user.role === 'doctor') {
+      // Get only patients assigned to THIS doctor from user management system
+      const assignedPatients = getDoctorPatients(user.id);
+      
+      // Calculate real adherence for each patient
+      const patientsWithData = assignedPatients.map(patient => {
+        const adherenceReports = JSON.parse(localStorage.getItem('adherenceReports') || '[]');
+        const patientReports = adherenceReports.filter(r => r.patientId === patient.id);
+        
+        let adherenceRate = 0;
+        if (patientReports.length > 0) {
+          const taken = patientReports.filter(r => r.medicationTaken === true).length;
+          adherenceRate = Math.round((taken / patientReports.length) * 100);
+        }
+        
+        // Get medication data
+        const patientMedicines = JSON.parse(localStorage.getItem('patientMedicines') || '[]');
+        const medications = patientMedicines.filter(m => m.patientId === patient.id);
+        
+        return {
+          ...patient,
+          adherenceRate,
+          complianceStatus: adherenceRate >= 70 ? 'Good' : 'Poor',
+          riskLevel: adherenceRate >= 70 ? 'Low' : adherenceRate >= 50 ? 'Medium' : 'High',
+          lastActivity: new Date().toISOString(),
+          medications: medications.map(med => med.medicineList || 'Prescribed medication'),
+          contactInfo: {
+            phone: patient.phone || 'N/A',
+            email: patient.email || 'N/A'
+          }
+        };
       });
+      
+      setPatients(patientsWithData);
+      
+      // Generate alerts for low adherence patients
+      const alerts = [];
+      patientsWithData.forEach(patient => {
+        if (patient.adherenceRate < 70 && patient.adherenceRate > 0) {
+          alerts.push({
+            id: `alert-${patient.id}`,
+            type: 'medication',
+            priority: patient.adherenceRate < 50 ? 'critical' : 'high',
+            title: 'Medication Adherence Alert',
+            message: `${patient.name} has ${patient.adherenceRate}% medication adherence rate`,
+            patientName: patient.name,
+            patientId: patient.patientId || patient.id,
+            timestamp: new Date().toISOString(),
+            active: true,
+            roles: ['doctor', 'admin'],
+            actions: [
+              { type: 'call-patient', label: 'Call Patient', primary: true }
+            ]
+          });
+        }
+        
+        // Check for missed appointments
+        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+        const missedAppointments = appointments.filter(apt => 
+          apt.patientId === patient.id && 
+          apt.status === 'missed' &&
+          new Date(apt.date) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+        );
+        
+        if (missedAppointments.length > 0) {
+          alerts.push({
+            id: `alert-appointment-${patient.id}`,
+            type: 'appointment',
+            priority: 'high',
+            title: 'Missed Appointment',
+            message: `${patient.name} has ${missedAppointments.length} missed appointment(s) in the last 30 days`,
+            patientName: patient.name,
+            patientId: patient.patientId || patient.id,
+            timestamp: new Date().toISOString(),
+            active: true,
+            roles: ['doctor', 'admin'],
+            actions: [
+              { type: 'schedule-appointment', label: 'Schedule Follow-up', primary: true }
+            ]
+          });
+        }
+      });
+      
+      setRealAlerts(alerts);
     }
-    setRealAlerts(alerts);
-  }, []);
+  }, [user]);
 
-  // Filter patients (will only have one)
+  // Filter patients
   const filteredPatients = useMemo(() => {
-    return realPatients.filter(patient => {
+    return patients.filter(patient => {
+      // Search filter
       if (filters.searchTerm) {
         const searchLower = filters.searchTerm.toLowerCase();
-        if (!patient.name.toLowerCase().includes(searchLower) && 
-            !patient.patientId.toLowerCase().includes(searchLower)) {
-          return false;
-        }
+        const matchesSearch = 
+          patient.name?.toLowerCase().includes(searchLower) || 
+          patient.patientId?.toLowerCase().includes(searchLower) ||
+          patient.email?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
       }
+      
+      // Compliance filter
+      if (filters.complianceFilter !== 'all') {
+        if (filters.complianceFilter === 'good' && patient.complianceStatus !== 'Good') return false;
+        if (filters.complianceFilter === 'poor' && patient.complianceStatus !== 'Poor') return false;
+      }
+      
+      // Risk filter
+      if (filters.riskFilter !== 'all') {
+        if (filters.riskFilter === 'high' && patient.riskLevel !== 'High') return false;
+        if (filters.riskFilter === 'low' && patient.riskLevel !== 'Low') return false;
+        if (filters.riskFilter === 'medium' && patient.riskLevel !== 'Medium') return false;
+      }
+      
       return true;
     });
-  }, [filters, realPatients]);
+  }, [filters, patients]);
 
-  // Real summary metrics
+  // Real summary metrics from actual patient data
   const summaryMetrics = useMemo(() => {
-    const totalPatients = filteredPatients.length;
-    const overallAdherence = filteredPatients.length > 0 ? filteredPatients[0].adherenceRate : 0;
+    const totalPatients = patients.length;
+    
+    // Calculate average adherence across all patients
+    let overallAdherence = 0;
+    if (patients.length > 0) {
+      const totalAdherence = patients.reduce((sum, p) => sum + (p.adherenceRate || 0), 0);
+      overallAdherence = Math.round(totalAdherence / patients.length);
+    }
+    
     const activeAlerts = realAlerts.length;
+    const criticalAlerts = realAlerts.filter(a => a.priority === 'critical').length;
     
     return [
       {
         id: 'total-patients',
         title: 'Total Patients',
         value: totalPatients,
-        description: 'Real patients monitored'
+        description: 'Patients assigned to you',
+        trend: totalPatients > 0 ? 'stable' : 'none'
       },
       {
         id: 'overall-adherence',
-        title: 'Overall Adherence',
+        title: 'Average Adherence',
         value: overallAdherence,
         unit: '%',
-        description: 'Real medication adherence from patient reports'
+        description: 'Real medication adherence from reports',
+        trend: overallAdherence >= 70 ? 'up' : overallAdherence >= 50 ? 'stable' : 'down'
       },
       {
         id: 'active-alerts',
         title: 'Active Alerts',
         value: activeAlerts,
-        description: 'Real alerts based on patient data'
+        description: `${criticalAlerts} critical alerts`,
+        trend: activeAlerts > 0 ? 'down' : 'stable'
+      },
+      {
+        id: 'high-risk-patients',
+        title: 'High Risk Patients',
+        value: patients.filter(p => p.riskLevel === 'High').length,
+        description: 'Patients requiring immediate attention',
+        trend: 'stable'
       }
     ];
-  }, [filteredPatients, realAlerts]);
+  }, [patients, realAlerts]);
 
   // Event handlers
   const handlePatientClick = (patient) => {
     window.location.href = `/patient-profile?id=${patient.id}`;
   };
 
-  const handleBulkMessage = (patients, messageType) => {
-    console.log(`Sending ${messageType} to ${patients.length} patients`);
+  const handleBulkMessage = (selectedPatients, messageType) => {
+    console.log(`Sending ${messageType} to ${selectedPatients.length} patients`);
+    alert(`Bulk message feature coming soon! Will send ${messageType} to ${selectedPatients.length} patients.`);
   };
 
   const handleAlertAction = (alertId, action) => {
     console.log(`Handling alert ${alertId} with action ${action.type}`);
+    
+    const alert = realAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+    
+    if (action.type === 'call-patient') {
+      alert(`Initiating call to ${alert.patientName}...`);
+    } else if (action.type === 'schedule-appointment') {
+      alert(`Opening appointment scheduler for ${alert.patientName}...`);
+    }
   };
 
   const handleDismissAlert = (alertId) => {
@@ -152,14 +229,28 @@ const DoctorDashboard = () => {
   };
 
   const handleMetricClick = (metric) => {
-    console.log(`Metric clicked: ${metric.type}`);
+    console.log(`Metric clicked: ${metric.id}`);
+    
+    // Navigate based on metric type
+    if (metric.id === 'total-patients') {
+      setActiveTab('patients');
+    } else if (metric.id === 'active-alerts') {
+      // Scroll to alerts panel or open alerts
+      const alertsPanel = document.querySelector('[data-component="emergency-alerts"]');
+      if (alertsPanel) {
+        alertsPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (metric.id === 'overall-adherence') {
+      setActiveTab('analytics');
+    }
   };
 
   // Tab items for navigation
   const tabItems = [
     { id: 'overview', label: 'Overview', icon: 'LayoutDashboard' },
     { id: 'patients', label: 'Patients', icon: 'Users' },
-    { id: 'vitals', label: 'Patient Vitals', icon: 'Activity' }, // NEW VITALS TAB
+    { id: 'messages', label: 'Messages', icon: 'MessageCircle' },
+    { id: 'vitals', label: 'Patient Vitals', icon: 'Activity' },
     { id: 'reports', label: 'Reports', icon: 'FileText' },
     { id: 'analytics', label: 'Analytics', icon: 'TrendingUp' }
   ];
@@ -167,7 +258,10 @@ const DoctorDashboard = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-text-primary">Loading...</div>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <div className="text-text-primary">Loading dashboard...</div>
+        </div>
       </div>
     );
   }
@@ -192,7 +286,7 @@ const DoctorDashboard = () => {
             Doctor Dashboard
           </h1>
           <p className="text-text-secondary">
-            Monitor patient adherence and vitals - Real data only
+            {user?.name ? `Welcome back, ${user.name}` : 'Monitor patient adherence and vitals'} • Real-time data from assigned patients
           </p>
         </div>
 
@@ -205,7 +299,8 @@ const DoctorDashboard = () => {
                 onClick={() => setActiveTab(tab?.id)}
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-medical ${
                   activeTab === tab?.id
-                    ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
                 }`}
               >
                 <Icon name={tab?.icon} size={16} />
@@ -230,12 +325,12 @@ const DoctorDashboard = () => {
                   <div className="bg-surface border border-border rounded-lg">
                     <div className="p-6 border-b border-border">
                       <h2 className="text-lg font-semibold text-text-primary mb-4">
-                        Patient Overview - Real Data Only
+                        Your Assigned Patients ({patients.length})
                       </h2>
                       <FilterControls 
                         onFiltersChange={setFilters}
                         patientCount={filteredPatients.length}
-                        totalPatients={realPatients.length}
+                        totalPatients={patients.length}
                         currentFilters={filters}
                       />
                     </div>
@@ -257,6 +352,7 @@ const DoctorDashboard = () => {
                     alerts={realAlerts}
                     onAlertAction={handleAlertAction}
                     onDismissAlert={handleDismissAlert}
+                    data-component="emergency-alerts"
                   />
                   
                   <QuickActionsPanel />
@@ -264,18 +360,21 @@ const DoctorDashboard = () => {
               </div>
             </>
           )}
-
+{/* Messages Tab */}
+{activeTab === 'messages' && (
+  <DoctorMessaging />
+)}
           {/* Patients Tab */}
           {activeTab === 'patients' && (
             <div className="bg-surface border border-border rounded-lg">
               <div className="p-6 border-b border-border">
                 <h2 className="text-lg font-semibold text-text-primary mb-4">
-                  Patient Management
+                  Patient Management ({patients.length} Total Patients)
                 </h2>
                 <FilterControls 
                   onFiltersChange={setFilters}
                   patientCount={filteredPatients.length}
-                  totalPatients={realPatients.length}
+                  totalPatients={patients.length}
                   currentFilters={filters}
                 />
               </div>
@@ -287,13 +386,39 @@ const DoctorDashboard = () => {
                 selectedPatients={selectedPatients}
                 onPatientSelect={setSelectedPatients}
               />
+              
+              {patients.length === 0 && (
+                <div className="p-12 text-center">
+                  <Icon name="Users" size={48} className="mx-auto text-text-secondary/50 mb-4" />
+                  <h3 className="text-lg font-medium text-text-primary mb-2">
+                    No Patients Assigned
+                  </h3>
+                  <p className="text-text-secondary">
+                    You don't have any patients assigned to you yet. Contact your administrator to assign patients.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* NEW VITALS TAB */}
+          {/* Vitals Tab */}
           {activeTab === 'vitals' && (
             <div className="space-y-6">
-              <PatientVitalsPanel selectedPatient={filteredPatients[0]} />
+              {filteredPatients.length > 0 ? (
+                filteredPatients.map(patient => (
+                  <PatientVitalsPanel key={patient.id} selectedPatient={patient} />
+                ))
+              ) : (
+                <div className="bg-surface border border-border rounded-lg p-12 text-center">
+                  <Icon name="Activity" size={48} className="mx-auto text-text-secondary/50 mb-4" />
+                  <h3 className="text-lg font-medium text-text-primary mb-2">
+                    No Patient Vitals Available
+                  </h3>
+                  <p className="text-text-secondary">
+                    No patients with vitals data found. Patients need to sync their health data via Google Fit.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -302,10 +427,10 @@ const DoctorDashboard = () => {
             <AnalysisReportsPanel />
           )}
 
-          {/* Analytics Tab */}
-{activeTab === 'analytics' && (
-  <PatientAnalyticsRealTime />
-)}
+          {/* Analytics Tab - Real-Time Patient Risk Analytics */}
+          {activeTab === 'analytics' && (
+            <PatientAnalyticsRealTime />
+          )}
         </div>
       </div>
     </div>

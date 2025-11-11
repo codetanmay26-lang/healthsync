@@ -1,9 +1,4 @@
-/**
- * Real-Time Patient Analytics Service
- * All calculations from actual localStorage data - NO MOCK DATA
- */
-
-// ==================== DATA FETCHERS ====================
+import { getUserById, getDoctorPatients } from './localStorageUserManagement';
 
 const getPatientData = (patientId) => {
   const patients = JSON.parse(localStorage.getItem('patients') || '[]');
@@ -671,12 +666,17 @@ export const calculateCombinedRisk = (patientId, patient) => {
 /**
  * Get all patients with risk scores
  */
-export const getAllPatientsWithRiskScores = () => {
-  const patients = JSON.parse(localStorage.getItem('patients') || '[]');
+export const getAllPatientsWithRiskScores = (doctorId) => {
+  // Get only patients assigned to this doctor
+  const patients = getDoctorPatients(doctorId);
+  
+  if (!patients || patients.length === 0) {
+    return [];
+  }
   
   const analyticsData = patients.map(patient => {
     return calculateCombinedRisk(patient.id, patient);
-  }).sort((a, b) => b.combinedScore - a.combinedScore); // Sort by highest risk first
+  }).sort((a, b) => b.combinedScore - a.combinedScore);
   
   return analyticsData;
 };

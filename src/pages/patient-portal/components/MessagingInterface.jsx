@@ -2,109 +2,77 @@ import React, { useState, useRef, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { useAuth } from '../../../contexts/AuthContext';
+import { 
+  sendMessage, 
+  getMessagesBetweenUsers, 
+  getUserById 
+} from '../../../services/localStorageUserManagement';
 
 const MessagingInterface = ({ onMessageSent }) => {
+  const { user } = useAuth(); // Get current logged-in user
   const [activeConversation, setActiveConversation] = useState('doctor');
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
 
-  const conversations = {
-    doctor: {
-      id: 'doctor',
-      name: 'Dr. Sarah Johnson',
-      role: 'Primary Care Physician',
-      avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
-      status: 'online',
-      lastSeen: 'Active now',
-      messages: [
-        {
-          id: 1,
-          sender: 'doctor',
-          content: "Hello! I\'ve reviewed your latest lab results. Your glucose levels are slightly elevated. Let\'s discuss some dietary adjustments.",
-          timestamp: new Date(2025, 8, 8, 9, 30),
-          type: 'text'
-        },
-        {
-          id: 2,
-          sender: 'patient',
-          content: "Thank you for reviewing them so quickly. What specific changes should I make to my diet?",
-          timestamp: new Date(2025, 8, 8, 10, 15),
-          type: 'text'
-        },
-        {
-          id: 3,
-          sender: 'doctor',
-          content: "I recommend reducing refined carbohydrates and increasing fiber intake. I'll send you a detailed meal plan. Also, let's schedule a follow-up in 2 weeks.",
-          timestamp: new Date(2025, 8, 8, 10, 45),
-          type: 'text'
-        },
-        {
-          id: 4,
-          sender: 'doctor',
-          content: "meal_plan_diabetes.pdf",
-          timestamp: new Date(2025, 8, 8, 10, 46),
-          type: 'file',
-          fileName: 'Diabetes Meal Plan',
-          fileSize: '2.3 MB'
-        }
-      ]
-    },
-    pharmacy: {
-      id: 'pharmacy',
-      name: 'HealthSync Pharmacy',
-      role: 'Pharmacy Team',
-      avatar: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=150&h=150&fit=crop',
-      status: 'online',
-      lastSeen: '2 hours ago',
-      messages: [
-        {
-          id: 1,
-          sender: 'pharmacy',
-          content: "Your prescription for Metformin is ready for pickup. We\'re open until 10 PM today.",
-          timestamp: new Date(2025, 8, 8, 14, 20),
-          type: 'text'
-        },
-        {
-          id: 2,
-          sender: 'patient',
-          content: "Great! Can I get it delivered instead? I\'m not feeling well today.",
-          timestamp: new Date(2025, 8, 8, 14, 25),
-          type: 'text'
-        },
-        {
-          id: 3,
-          sender: 'pharmacy',
-          content: "Absolutely! We can deliver it within 2 hours for a $5 delivery fee. Would you like to proceed?",
-          timestamp: new Date(2025, 8, 8, 14, 30),
-          type: 'text'
-        }
-      ]
-    },
-    support: {
-      id: 'support',
-      name: 'HealthSync Support',
-      role: 'Technical Support',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      status: 'online',
-      lastSeen: 'Active now',
-      messages: [
-        {
-          id: 1,
-          sender: 'support',
-          content: "Hi! I\'m here to help with any questions about using the HealthSync app. How can I assist you today?",
-          timestamp: new Date(2025, 8, 8, 16, 0),
-          type: 'text'
-        }
-      ]
+  // Get user's doctor, pharmacy, support contacts
+  const [contacts, setContacts] = useState({
+    doctor: null,
+    pharmacy: null,
+    support: null
+  });
+
+  // Load contacts on mount
+  useEffect(() => {
+    if (user && user.role === 'patient') {
+      const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // Find assigned doctor
+      const assignedDoctor = allUsers.find(u => 
+        u.id === user.assignedDoctorId && u.role === 'doctor'
+      );
+      
+      // Find pharmacy
+      const pharmacy = allUsers.find(u => u.role === 'pharmacy');
+      
+      // Find support/admin
+      const support = allUsers.find(u => u.role === 'admin');
+      
+      setContacts({
+        doctor: assignedDoctor,
+        pharmacy: pharmacy,
+        support: support
+      });
+      
+      // Set default conversation to doctor if exists
+      if (assignedDoctor) {
+        setActiveConversation('doctor');
+        loadMessages(assignedDoctor.id);
+      }
     }
+  }, [user]);
+
+  // Load messages for active conversation
+  const loadMessages = (contactId) => {
+    if (!user || !contactId) return;
+    
+    const conversationMessages = getMessagesBetweenUsers(user.id, contactId);
+    setMessages(conversationMessages);
   };
 
-  const currentConversation = conversations?.[activeConversation];
+  // Reload messages when conversation changes
+  useEffect(() => {
+    const contact = contacts[activeConversation];
+    if (contact) {
+      loadMessages(contact.id);
+    }
+  }, [activeConversation, contacts, user]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentConversation?.messages, activeConversation]);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef?.current?.scrollIntoView({ behavior: 'smooth' });
@@ -112,47 +80,38 @@ const MessagingInterface = ({ onMessageSent }) => {
 
   const handleSendMessage = () => {
     if (!newMessage?.trim()) return;
+    
+    const contact = contacts[activeConversation];
+    if (!contact) return;
 
-    const message = {
-      id: Date.now(),
-      sender: 'patient',
-      content: newMessage,
-      timestamp: new Date(),
-      type: 'text'
-    };
-
-    // Add message to conversation
-    conversations?.[activeConversation]?.messages?.push(message);
-
-    if (onMessageSent) {
-      onMessageSent(message, activeConversation);
-    }
-
-    setNewMessage('');
-
-    // Simulate typing indicator and response
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
+    // Send message via user management system
+    const result = sendMessage(user.id, contact.id, newMessage);
+    
+    if (result.success) {
+      // Reload messages
+      loadMessages(contact.id);
+      setNewMessage('');
       
-      // Add mock response
-      const responses = {
-        doctor: "Thank you for your message. I\'ll review this and get back to you shortly.",
-        pharmacy: "Got it! We\'ll process your request right away.",
-        support: "Thanks for reaching out! Let me help you with that."
-      };
-
-      const response = {
-        id: Date.now() + 1,
-        sender: activeConversation,
-        content: responses?.[activeConversation],
-        timestamp: new Date(),
-        type: 'text'
-      };
-
-      conversations?.[activeConversation]?.messages?.push(response);
-      scrollToBottom();
-    }, 2000);
+      if (onMessageSent) {
+        onMessageSent(result.message, activeConversation);
+      }
+      
+      // Simulate typing indicator and response (optional)
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        
+        // Auto-response from contact
+        const responses = {
+          doctor: "Thank you for your message. I'll review this and get back to you shortly.",
+          pharmacy: "Got it! We'll process your request right away.",
+          support: "Thanks for reaching out! Let me help you with that."
+        };
+        
+        sendMessage(contact.id, user.id, responses[activeConversation]);
+        loadMessages(contact.id);
+      }, 2000);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -163,7 +122,7 @@ const MessagingInterface = ({ onMessageSent }) => {
   };
 
   const formatTime = (timestamp) => {
-    return timestamp?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatDate = (timestamp) => {
@@ -185,18 +144,22 @@ const MessagingInterface = ({ onMessageSent }) => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'online': return 'bg-success';
-      case 'away': return 'bg-warning';
-      case 'offline': return 'bg-error';
-      default: return 'bg-text-secondary';
-    }
+    return 'bg-success'; // All users are online for now
   };
 
-  const downloadFile = (fileName) => {
-    // In a real app, this would download the file
-    alert(`Downloading ${fileName}...`);
-  };
+  const currentContact = contacts[activeConversation];
+
+  if (!user || !currentContact) {
+    return (
+      <div className="bg-surface rounded-lg border border-border p-12 text-center">
+        <Icon name="MessageCircle" size={48} className="text-text-secondary/50 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-text-primary mb-2">No Contacts Available</h3>
+        <p className="text-text-secondary">
+          You don't have any healthcare providers assigned yet.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface rounded-lg border border-border overflow-hidden">
@@ -215,108 +178,96 @@ const MessagingInterface = ({ onMessageSent }) => {
 
         {/* Conversation Tabs */}
         <div className="flex space-x-1">
-          {Object.values(conversations)?.map((conv) => (
-            <button
-              key={conv?.id}
-              onClick={() => setActiveConversation(conv?.id)}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-medical ${
-                activeConversation === conv?.id
-                  ? 'bg-surface text-text-primary shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'
-              }`}
-            >
-              <div className="relative">
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-xs text-white font-medium">
-                    {conv?.name?.charAt(0)}
-                  </span>
+          {Object.entries(contacts).map(([key, contact]) => {
+            if (!contact) return null;
+            
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveConversation(key)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-medical ${
+                  activeConversation === key
+                    ? 'bg-surface text-text-primary shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'
+                }`}
+              >
+                <div className="relative">
+                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white font-medium">
+                      {contact.name?.charAt(0)}
+                    </span>
+                  </div>
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor('online')}`} />
                 </div>
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor(conv?.status)}`} />
-              </div>
-              <span>{conv?.name?.split(' ')?.[0]}</span>
-            </button>
-          ))}
+                <span>{contact.name?.split(' ')[0]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
+
       {/* Current Conversation Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <span className="text-sm text-white font-medium">
-                {currentConversation?.name?.charAt(0)}
+                {currentContact.name?.charAt(0)}
               </span>
             </div>
-            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor(currentConversation?.status)}`} />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor('online')}`} />
           </div>
           <div>
-            <h3 className="font-medium text-text-primary">{currentConversation?.name}</h3>
-            <p className="text-sm text-text-secondary">{currentConversation?.role}</p>
-            <p className="text-xs text-text-secondary">{currentConversation?.lastSeen}</p>
+            <h3 className="font-medium text-text-primary">{currentContact.name}</h3>
+            <p className="text-sm text-text-secondary">{currentContact.role || currentContact.specialization}</p>
+            <p className="text-xs text-text-secondary">Active now</p>
           </div>
         </div>
       </div>
+
       {/* Messages */}
       <div className="h-96 overflow-y-auto p-4 space-y-4">
-        {currentConversation?.messages?.map((message, index) => {
-          const isPatient = message?.sender === 'patient';
-          const showDate = index === 0 || 
-            formatDate(message?.timestamp) !== formatDate(currentConversation?.messages?.[index - 1]?.timestamp);
+        {messages.length === 0 ? (
+          <div className="text-center py-8 text-text-secondary">
+            <Icon name="MessageCircle" size={48} className="mx-auto mb-2 opacity-50" />
+            <p>No messages yet. Start a conversation!</p>
+          </div>
+        ) : (
+          messages.map((message, index) => {
+            const isPatient = message.from === user.id;
+            const showDate = index === 0 || 
+              formatDate(message.timestamp) !== formatDate(messages[index - 1]?.timestamp);
 
-          return (
-            <div key={message?.id}>
-              {showDate && (
-                <div className="text-center my-4">
-                  <span className="text-xs text-text-secondary bg-muted px-3 py-1 rounded-full">
-                    {formatDate(message?.timestamp)}
-                  </span>
-                </div>
-              )}
-              <div className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs lg:max-w-md ${isPatient ? 'order-2' : 'order-1'}`}>
-                  {message?.type === 'text' ? (
+            return (
+              <div key={message.id}>
+                {showDate && (
+                  <div className="text-center my-4">
+                    <span className="text-xs text-text-secondary bg-muted px-3 py-1 rounded-full">
+                      {formatDate(message.timestamp)}
+                    </span>
+                  </div>
+                )}
+
+                <div className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-xs lg:max-w-md ${isPatient ? 'order-2' : 'order-1'}`}>
                     <div className={`p-3 rounded-lg ${
-                      isPatient 
-                        ? 'bg-primary text-primary-foreground' 
+                      isPatient
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-text-primary'
                     }`}>
-                      <p className="text-sm">{message?.content}</p>
+                      <p className="text-sm">{message.message}</p>
                     </div>
-                  ) : message?.type === 'file' ? (
-                    <div className={`p-3 rounded-lg border ${
-                      isPatient 
-                        ? 'bg-primary/10 border-primary' :'bg-muted border-border'
+                    <p className={`text-xs text-text-secondary mt-1 ${
+                      isPatient ? 'text-right' : 'text-left'
                     }`}>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Icon name="FileText" size={20} className="text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-text-primary">{message?.fileName}</p>
-                          <p className="text-xs text-text-secondary">{message?.fileSize}</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          iconName="Download"
-                          iconSize={16}
-                          onClick={() => downloadFile(message?.fileName)}
-                          className="text-primary hover:bg-primary/10"
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                  
-                  <p className={`text-xs text-text-secondary mt-1 ${
-                    isPatient ? 'text-right' : 'text-left'
-                  }`}>
-                    {formatTime(message?.timestamp)}
-                  </p>
+                      {formatTime(message.timestamp)}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
 
         {/* Typing Indicator */}
         {isTyping && (
@@ -333,6 +284,7 @@ const MessagingInterface = ({ onMessageSent }) => {
 
         <div ref={messagesEndRef} />
       </div>
+
       {/* Message Input */}
       <div className="p-4 border-t border-border">
         <div className="flex items-end space-x-3">
@@ -341,12 +293,12 @@ const MessagingInterface = ({ onMessageSent }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e?.target?.value)}
               onKeyPress={handleKeyPress}
-              placeholder={`Message ${currentConversation?.name}...`}
+              placeholder={`Message ${currentContact.name}...`}
               className="w-full p-3 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
               rows="2"
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
@@ -366,7 +318,7 @@ const MessagingInterface = ({ onMessageSent }) => {
             />
           </div>
         </div>
-        
+
         <p className="text-xs text-text-secondary mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>

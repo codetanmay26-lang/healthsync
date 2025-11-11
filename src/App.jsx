@@ -3,20 +3,21 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Routes from './Routes';
 import ErrorBoundary from './components/ErrorBoundary';
-import Toast from './components/ui/Toast'; // Add this import
-import './styles/index.css';
+import ScrollToTop from './components/ScrollToTop';
+import Toast from './components/ui/Toast';
 
-const App = () => {
+function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
+          <ScrollToTop />
           <Routes />
-          <Toast /> {/* Add this line */}
+          <Toast />
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );
-};
+}
 
 export default App;
