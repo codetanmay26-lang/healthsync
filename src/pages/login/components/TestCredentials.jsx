@@ -1,50 +1,41 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
-
+import React, { useState } from "react";
+import Icon from "../../../components/AppIcon";
 
 const TestCredentials = ({ onCredentialSelect }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const testAccounts = [
     {
-      role: 'doctor',
-      email: 'doctor@healthsync.com',
-      password: 'doctor123',
-      name: 'Dr. Sarah Johnson',
-      icon: 'Stethoscope',
-      color: 'text-primary bg-primary/10'
+      role: "doctor",
+      email: "doctor@healthsync.com",
+      password: "doctor123",
+      name: "Dr. Sarah Johnson",
+      icon: "Stethoscope",
+      color: "text-primary bg-primary/10",
     },
     {
-      role: 'patient',
-      email: 'patient@healthsync.com',
-      password: 'patient123',
-      name: 'Rakesh Sharma',
-      icon: 'User',
-      color: 'text-accent bg-accent/10'
+      role: "patient",
+      email: "patient@healthsync.com",
+      password: "patient123",
+      name: "Rakesh Sharma",
+      icon: "User",
+      color: "text-accent bg-accent/10",
     },
     {
-      role: 'pharmacy',
-      email: 'pharmacy@healthsync.com',
-      password: 'pharmacy123',
-      name: 'MediCare Pharmacy',
-      icon: 'Pill',
-      color: 'text-warning bg-warning/10'
+      role: "admin",
+      email: "admin@healthsync.com",
+      password: "admin123",
+      name: "System Administrator",
+      icon: "Shield",
+      color: "text-error bg-error/10",
     },
-    {
-      role: 'admin',
-      email: 'admin@healthsync.com',
-      password: 'admin123',
-      name: 'System Administrator',
-      icon: 'Shield',
-      color: 'text-error bg-error/10'
-    }
   ];
 
   const handleCredentialClick = (account) => {
     onCredentialSelect({
       email: account?.email,
       password: account?.password,
-      role: account?.role
+      role: account?.role,
     });
   };
 
@@ -60,10 +51,10 @@ const TestCredentials = ({ onCredentialSelect }) => {
             Demo Credentials
           </span>
         </div>
-        <Icon 
-          name={isExpanded ? "ChevronUp" : "ChevronDown"} 
-          size={16} 
-          className="text-text-secondary" 
+        <Icon
+          name={isExpanded ? "ChevronUp" : "ChevronDown"}
+          size={16}
+          className="text-text-secondary"
         />
       </button>
       {isExpanded && (
@@ -71,14 +62,16 @@ const TestCredentials = ({ onCredentialSelect }) => {
           <p className="text-xs text-text-secondary mb-3">
             Click any account below to auto-fill login credentials for testing:
           </p>
-          
+
           {testAccounts?.map((account) => (
             <button
               key={account?.role}
               onClick={() => handleCredentialClick(account)}
               className="flex items-center space-x-3 w-full p-2 rounded-lg hover:bg-surface transition-medical text-left"
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${account?.color}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${account?.color}`}
+              >
                 <Icon name={account?.icon} size={14} />
               </div>
               <div className="flex-1 min-w-0">
@@ -97,7 +90,7 @@ const TestCredentials = ({ onCredentialSelect }) => {
               <Icon name="Copy" size={14} className="text-text-secondary" />
             </button>
           ))}
-          
+
           <div className="mt-3 pt-3 border-t border-border">
             <p className="text-xs text-text-secondary">
               <Icon name="Info" size={12} className="inline mr-1" />

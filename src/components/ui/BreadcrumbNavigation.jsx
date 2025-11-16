@@ -1,12 +1,12 @@
-import React from 'react';
-import Icon from '../AppIcon';
-import Button from './Button';
+import React from "react";
+import Icon from "../AppIcon";
+import Button from "./Button";
 
-const BreadcrumbNavigation = ({ 
+const BreadcrumbNavigation = ({
   items = [],
-  userRole = 'doctor',
+  userRole = "doctor",
   showBackButton = true,
-  onBack
+  onBack,
 }) => {
   const handleBack = () => {
     if (onBack) {
@@ -24,16 +24,22 @@ const BreadcrumbNavigation = ({
 
   const getRoleBasedHome = () => {
     switch (userRole) {
-      case 'doctor':
-        return { label: 'Dashboard', path: '/doctor-dashboard', icon: 'Activity' };
-      case 'patient':
-        return { label: 'My Portal', path: '/patient-portal', icon: 'User' };
-      case 'pharmacy':
-        return { label: 'Dashboard', path: '/pharmacy-dashboard', icon: 'Package' };
-      case 'admin':
-        return { label: 'Analytics', path: '/admin-analytics', icon: 'BarChart3' };
+      case "doctor":
+        return {
+          label: "Dashboard",
+          path: "/doctor-dashboard",
+          icon: "Activity",
+        };
+      case "patient":
+        return { label: "My Portal", path: "/patient-portal", icon: "User" };
+      case "admin":
+        return {
+          label: "Analytics",
+          path: "/admin-analytics",
+          icon: "BarChart3",
+        };
       default:
-        return { label: 'Home', path: '/', icon: 'Home' };
+        return { label: "Home", path: "/", icon: "Home" };
     }
   };
 
@@ -63,16 +69,17 @@ const BreadcrumbNavigation = ({
       <ol className="flex items-center space-x-2">
         {allItems?.map((item, index) => {
           const isLast = index === allItems?.length - 1;
-          const isClickable = item?.clickable !== false && item?.path && !isLast;
+          const isClickable =
+            item?.clickable !== false && item?.path && !isLast;
 
           return (
             <li key={index} className="flex items-center">
               {/* Separator */}
               {index > 0 && (
-                <Icon 
-                  name="ChevronRight" 
-                  size={14} 
-                  className="text-text-secondary mx-2" 
+                <Icon
+                  name="ChevronRight"
+                  size={14}
+                  className="text-text-secondary mx-2"
                   aria-hidden="true"
                 />
               )}
@@ -82,7 +89,7 @@ const BreadcrumbNavigation = ({
                   <button
                     onClick={() => handleBreadcrumbClick(item)}
                     className="flex items-center space-x-1 text-sm text-text-secondary hover:text-primary transition-medical"
-                    aria-current={isLast ? 'page' : undefined}
+                    aria-current={isLast ? "page" : undefined}
                   >
                     {item?.icon && index === 0 && (
                       <Icon name={item?.icon} size={14} className="mr-1" />
@@ -90,12 +97,13 @@ const BreadcrumbNavigation = ({
                     <span>{item?.label}</span>
                   </button>
                 ) : (
-                  <span 
+                  <span
                     className={`flex items-center space-x-1 text-sm ${
-                      isLast 
-                        ? 'text-text-primary font-medium' :'text-text-secondary'
+                      isLast
+                        ? "text-text-primary font-medium"
+                        : "text-text-secondary"
                     }`}
-                    aria-current={isLast ? 'page' : undefined}
+                    aria-current={isLast ? "page" : undefined}
                   >
                     {item?.icon && index === 0 && (
                       <Icon name={item?.icon} size={14} className="mr-1" />
@@ -106,11 +114,17 @@ const BreadcrumbNavigation = ({
 
                 {/* Status Indicator */}
                 {item?.status && (
-                  <span className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
-                    item?.status === 'active' ? 'bg-success/10 text-success' :
-                    item?.status === 'pending' ? 'bg-warning/10 text-warning' :
-                    item?.status === 'inactive'? 'bg-error/10 text-error' : 'bg-muted text-text-secondary'
-                  }`}>
+                  <span
+                    className={`ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${
+                      item?.status === "active"
+                        ? "bg-success/10 text-success"
+                        : item?.status === "pending"
+                        ? "bg-warning/10 text-warning"
+                        : item?.status === "inactive"
+                        ? "bg-error/10 text-error"
+                        : "bg-muted text-text-secondary"
+                    }`}
+                  >
                     {item?.status}
                   </span>
                 )}
@@ -150,35 +164,29 @@ const BreadcrumbNavigation = ({
 // Example usage patterns for different healthcare workflows
 BreadcrumbNavigation.examples = {
   doctorPatientView: [
-    { label: 'Patients', path: '/doctor-dashboard' },
-    { label: 'John Doe', path: '/patient-profile/john-doe' },
-    { 
-      label: 'Medical History', 
-      status: 'active',
+    { label: "Patients", path: "/doctor-dashboard" },
+    { label: "John Doe", path: "/patient-profile/john-doe" },
+    {
+      label: "Medical History",
+      status: "active",
       actions: [
-        { icon: 'Edit', label: 'Edit', onClick: () => {} },
-        { icon: 'Share', label: 'Share', onClick: () => {} }
-      ]
-    }
+        { icon: "Edit", label: "Edit", onClick: () => {} },
+        { icon: "Share", label: "Share", onClick: () => {} },
+      ],
+    },
   ],
-  
-  pharmacyInventory: [
-    { label: 'Inventory', path: '/pharmacy-dashboard' },
-    { label: 'Medications', path: '/pharmacy-dashboard/medications' },
-    { label: 'Insulin', count: 24 }
-  ],
-  
+
   patientMedications: [
-    { label: 'My Medications', path: '/patient-portal' },
-    { label: 'Prescriptions', path: '/patient-portal/prescriptions' },
-    { label: 'Current', status: 'active' }
+    { label: "My Medications", path: "/patient-portal" },
+    { label: "Prescriptions", path: "/patient-portal/prescriptions" },
+    { label: "Current", status: "active" },
   ],
-  
+
   adminAnalytics: [
-    { label: 'Reports', path: '/admin-analytics' },
-    { label: 'Patient Outcomes', path: '/admin-analytics/outcomes' },
-    { label: 'Monthly Summary' }
-  ]
+    { label: "Reports", path: "/admin-analytics" },
+    { label: "Patient Outcomes", path: "/admin-analytics/outcomes" },
+    { label: "Monthly Summary" },
+  ],
 };
 
 export default BreadcrumbNavigation;

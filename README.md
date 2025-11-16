@@ -1,17 +1,17 @@
 # HealthSync
 
-> AI-powered continuity of care platform connecting hospitals, patients, and pharmacies
+> AI-powered continuity of care platform connecting hospitals, patients, and care teams
 
 [![Made with React](https://img.shields.io/badge/Made%20with-React-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Built%20with-Vite-646CFF?style=flat-square&logo=vite)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Styled%20with-Tailwind-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 
-
 ## ▸ Overview
 
-HealthSync bridges the healthcare gap post-discharge by creating a connected care loop between hospitals, patients, and pharmacies. Using AI-powered insights, smart reminders, and real-time monitoring, it ensures safe and effective patient recovery at home.
+HealthSync bridges the healthcare gap post-discharge by creating a connected care loop between hospitals, patients, and dedicated care teams. Using AI-powered insights, smart reminders, and real-time monitoring, it ensures safe and effective patient recovery at home.
 
 ### ▸ Problem Statement
+
 - 43% of patients miss medications within 30 days of discharge
 - Poor coordination between healthcare providers
 - Late detection of emergency situations
@@ -23,25 +23,24 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 🔹 **Smart Reminders** - Personalized medication and appointment alerts  
 🔹 **Lab Analysis** - AI flags abnormal values for immediate doctor attention  
 🔹 **Emergency Prediction** - Real-time risk assessment from vitals and lab data  
-🔹 **Pharmacy Forecasting** - Demand prediction for inventory optimization  
-🔹 **Multi-Role Dashboards** - Tailored interfaces for doctors, patients, and pharmacies  
-🔹 **Wearable Integration** - Real-time vitals from smartwatches  
+🔹 **Care Team Coordination** - Shared workspaces for outreach and follow-ups  
+🔹 **Multi-Role Dashboards** - Tailored interfaces for doctors, patients, and admins  
+🔹 **Wearable Integration** - Real-time vitals from smartwatches
 
 ## ▸ Tech Stack
 
-| Layer | Technology/Libraries |
-|-------|---------------------|
-| **Frontend** | React 18, Vite, Tailwind CSS, Redux Toolkit, React Router v6 |
-| **Styling** | TailwindCSS (forms, typography, layouts), Framer Motion |
-| **Data Viz** | D3.js, Recharts |
-| **Forms** | React Hook Form |
-| **Testing** | Jest, React Testing Library |
-| **AI/NLP/OCR** | Tesseract.js, spaCy, Google Vision, Gemini API |
-| **Backend** | Node.js (Firebase & Realtime DB planned) |
-| **APIs** | Google Fit, Gemini API, Cloud Messaging (future) |
-| **Other** | Axios, class-variance-authority, date-fns, jsPDF |
-| **Dev Tools** | Vite, PostCSS, ESLint, Autoprefixer |
-                                           
+| Layer          | Technology/Libraries                                         |
+| -------------- | ------------------------------------------------------------ |
+| **Frontend**   | React 18, Vite, Tailwind CSS, Redux Toolkit, React Router v6 |
+| **Styling**    | TailwindCSS (forms, typography, layouts), Framer Motion      |
+| **Data Viz**   | D3.js, Recharts                                              |
+| **Forms**      | React Hook Form                                              |
+| **Testing**    | Jest, React Testing Library                                  |
+| **AI/NLP/OCR** | Tesseract.js, spaCy, Google Vision, Gemini API               |
+| **Backend**    | Node.js (Firebase & Realtime DB planned)                     |
+| **APIs**       | Google Fit, Gemini API, Cloud Messaging (future)             |
+| **Other**      | Axios, class-variance-authority, date-fns, jsPDF             |
+| **Dev Tools**  | Vite, PostCSS, ESLint, Autoprefixer                          |
 
 ## ▸ Prerequisites
 
@@ -58,7 +57,6 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
    yarn install
    yarn add jspdf tesseract.js react-pdftotext
    ```
-   
 2. Start the development server:
    ```bash
    npm start
@@ -73,25 +71,24 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 - **Storage**: All data (prescriptions, labs, vitals, meds) stored in browser localStorage
 - **Privacy**: Data never leaves your device • Completely isolated per user
 - **Persistence**: Data survives browser restarts until manually cleared
-- **Reset Options**: 
+- **Reset Options**:
   - 🔹 Use Incognito/Private mode (recommended)
   - 🔹 Clear browser cache: Settings → Privacy → Clear browsing data
 - **Note**: Logout only clears auth tokens, not demo data
 
- **For fresh demo**: Open in Incognito mode and login with test credentials
+  **For fresh demo**: Open in Incognito mode and login with test credentials
 
- ## ▸ Demo Credentials
+## ▸ Demo Credentials
 
 **Quick Login:** Simply click on any user card on the login page for instant access—no need to manually enter credentials!
 
-| Role | Email | Password |
-|------|-------|----------|
-| Doctor | doctor@healthsync.com | doctor123 |
+| Role    | Email                  | Password   |
+| ------- | ---------------------- | ---------- |
+| Doctor  | doctor@healthsync.com  | doctor123  |
 | Patient | patient@healthsync.com | patient123 |
-| Pharmacy | pharmacy@healthsync.com | pharmacy123 |
-| Admin | admin@healthsync.com | admin123 |
+| Admin   | admin@healthsync.com   | admin123   |
 
-##  ▸ Usage
+## ▸ Usage
 
 1. **Login** with demo credentials
 2. **Upload** prescriptions/lab reports (patients)
@@ -194,13 +191,6 @@ healthsync-main
 │  │  │  │  ├─ MedicationTimeline.jsx
 │  │  │  │  └─ PatientHeader.jsx
 │  │  │  └─ index.jsx
-│  │  ├─ pharmacy-dashboard
-│  │  │  ├─ components
-│  │  │  │  ├─ AnalyticsCharts.jsx
-│  │  │  │  ├─ EmergencyAlertsPanel.jsx
-│  │  │  │  ├─ InventoryOverview.jsx
-│  │  │  │  └─ RefillRequestsPanel.jsx
-│  │  │  └─ index.jsx
 │  │  └─ welcome
 │  │     ├─ background.css
 │  │     ├─ CombinedIllustration.jsx
@@ -227,6 +217,7 @@ healthsync-main
 └─ vitest.config.mjs
 
 ```
+
 ## ▸ Achievements
 
 - Addresses WHO SDG 3: Good Health & Well-being

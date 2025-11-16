@@ -1,12 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import Image from '../../../components/AppImage';
+import React, { useState, useRef, useEffect } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import Image from "../../../components/AppImage";
 
-const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) => {
-  const [newMessage, setNewMessage] = useState('');
-  const [selectedParticipant, setSelectedParticipant] = useState('all');
+const ChatMessaging = ({
+  messages,
+  participants,
+  currentUser,
+  onSendMessage,
+}) => {
+  const [newMessage, setNewMessage] = useState("");
+  const [selectedParticipant, setSelectedParticipant] = useState("all");
   const [showAttachments, setShowAttachments] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -16,7 +21,7 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef?.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef?.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = () => {
@@ -24,15 +29,15 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
       onSendMessage({
         content: newMessage,
         recipient: selectedParticipant,
-        type: 'text',
-        timestamp: new Date()?.toISOString()
+        type: "text",
+        timestamp: new Date()?.toISOString(),
       });
-      setNewMessage('');
+      setNewMessage("");
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e?.key === 'Enter' && !e?.shiftKey) {
+    if (e?.key === "Enter" && !e?.shiftKey) {
       e?.preventDefault();
       handleSendMessage();
     }
@@ -44,25 +49,29 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
       onSendMessage({
         content: `Shared file: ${file?.name}`,
         recipient: selectedParticipant,
-        type: 'file',
+        type: "file",
         attachment: {
           name: file?.name,
           size: file?.size,
-          type: file?.type
+          type: file?.type,
         },
-        timestamp: new Date()?.toISOString()
+        timestamp: new Date()?.toISOString(),
       });
     }
   };
 
   const getParticipantRole = (participant) => {
     const roles = {
-      'doctor': { icon: 'Stethoscope', color: 'text-primary' },
-      'patient': { icon: 'User', color: 'text-accent' },
-      'pharmacy': { icon: 'Pill', color: 'text-warning' },
-      'nurse': { icon: 'Heart', color: 'text-success' }
+      doctor: { icon: "Stethoscope", color: "text-primary" },
+      patient: { icon: "User", color: "text-accent" },
+      nurse: { icon: "Heart", color: "text-success" },
     };
-    return roles?.[participant?.role] || { icon: 'User', color: 'text-text-secondary' };
+    return (
+      roles?.[participant?.role] || {
+        icon: "User",
+        color: "text-text-secondary",
+      }
+    );
   };
 
   const formatMessageTime = (timestamp) => {
@@ -71,21 +80,26 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
     const diffInHours = (now - date) / (1000 * 60 * 60);
 
     if (diffInHours < 24) {
-      return date?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date?.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } else {
-      return date?.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date?.toLocaleDateString([], { month: "short", day: "numeric" });
     }
   };
 
   const renderMessage = (message) => {
     const isCurrentUser = message?.sender === currentUser?.name;
-    const participant = participants?.find(p => p?.name === message?.sender);
+    const participant = participants?.find((p) => p?.name === message?.sender);
     const roleInfo = getParticipantRole(participant || {});
 
     return (
       <div
         key={message?.id}
-        className={`flex items-start space-x-3 mb-4 ${isCurrentUser ? 'flex-row-reverse space-x-reverse' : ''}`}
+        className={`flex items-start space-x-3 mb-4 ${
+          isCurrentUser ? "flex-row-reverse space-x-reverse" : ""
+        }`}
       >
         {/* Avatar */}
         <div className="relative">
@@ -94,26 +108,36 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
             alt={message?.sender}
             className="w-8 h-8 rounded-full object-cover"
           />
-          <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center bg-surface ${roleInfo?.color}`}>
+          <div
+            className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center bg-surface ${roleInfo?.color}`}
+          >
             <Icon name={roleInfo?.icon} size={8} />
           </div>
         </div>
         {/* Message Content */}
-        <div className={`flex-1 max-w-xs md:max-w-md ${isCurrentUser ? 'text-right' : ''}`}>
-          <div className={`inline-block p-3 rounded-lg ${
-            isCurrentUser 
-              ? 'bg-primary text-primary-foreground' 
-              : 'bg-muted text-text-primary'
-          }`}>
-            {message?.type === 'text' && (
+        <div
+          className={`flex-1 max-w-xs md:max-w-md ${
+            isCurrentUser ? "text-right" : ""
+          }`}
+        >
+          <div
+            className={`inline-block p-3 rounded-lg ${
+              isCurrentUser
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-text-primary"
+            }`}
+          >
+            {message?.type === "text" && (
               <p className="text-sm whitespace-pre-wrap">{message?.content}</p>
             )}
 
-            {message?.type === 'file' && (
+            {message?.type === "file" && (
               <div className="flex items-center space-x-2">
                 <Icon name="Paperclip" size={16} />
                 <div>
-                  <p className="text-sm font-medium">{message?.attachment?.name}</p>
+                  <p className="text-sm font-medium">
+                    {message?.attachment?.name}
+                  </p>
                   <p className="text-xs opacity-75">
                     {(message?.attachment?.size / 1024)?.toFixed(1)} KB
                   </p>
@@ -121,17 +145,19 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
               </div>
             )}
 
-            {message?.type === 'prescription' && (
+            {message?.type === "prescription" && (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Icon name="Pill" size={16} />
-                  <span className="text-sm font-medium">Prescription Update</span>
+                  <span className="text-sm font-medium">
+                    Prescription Update
+                  </span>
                 </div>
                 <p className="text-sm">{message?.content}</p>
               </div>
             )}
 
-            {message?.type === 'lab_result' && (
+            {message?.type === "lab_result" && (
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Icon name="FileText" size={16} />
@@ -142,9 +168,11 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
             )}
           </div>
 
-          <div className={`flex items-center space-x-2 mt-1 text-xs text-text-secondary ${
-            isCurrentUser ? 'justify-end' : ''
-          }`}>
+          <div
+            className={`flex items-center space-x-2 mt-1 text-xs text-text-secondary ${
+              isCurrentUser ? "justify-end" : ""
+            }`}
+          >
             <span>{message?.sender}</span>
             <span>•</span>
             <span>{formatMessageTime(message?.timestamp)}</span>
@@ -201,14 +229,18 @@ const ChatMessaging = ({ messages, participants, currentUser, onSendMessage }) =
                   alt={participant?.name}
                   className="w-6 h-6 rounded-full object-cover"
                 />
-                <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center bg-surface ${roleInfo?.color}`}>
+                <div
+                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full flex items-center justify-center bg-surface ${roleInfo?.color}`}
+                >
                   <Icon name={roleInfo?.icon} size={6} />
                 </div>
               </div>
             );
           })}
           {participants?.length > 4 && (
-            <span className="text-xs text-text-secondary">+{participants?.length - 4} more</span>
+            <span className="text-xs text-text-secondary">
+              +{participants?.length - 4} more
+            </span>
           )}
         </div>
       </div>

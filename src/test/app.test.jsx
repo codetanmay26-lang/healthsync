@@ -91,7 +91,6 @@ describe("HealthSync Core Functionality Tests", () => {
       const roleRoutes = {
         doctor: "/doctor-dashboard",
         patient: "/patient-portal",
-        pharmacy: "/pharmacy-dashboard",
         admin: "/admin-analytics",
       };
 

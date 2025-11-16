@@ -1,54 +1,49 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { useAuth } from '../../../contexts/AuthContext';
-import { 
-  sendMessage, 
-  getMessagesBetweenUsers, 
-  getUserById 
-} from '../../../services/localStorageUserManagement';
+import React, { useState, useRef, useEffect } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import { useAuth } from "../../../contexts/AuthContext";
+import {
+  sendMessage,
+  getMessagesBetweenUsers,
+  getUserById,
+} from "../../../services/localStorageUserManagement";
 
 const MessagingInterface = ({ onMessageSent }) => {
   const { user } = useAuth(); // Get current logged-in user
-  const [activeConversation, setActiveConversation] = useState('doctor');
-  const [newMessage, setNewMessage] = useState('');
+  const [activeConversation, setActiveConversation] = useState("doctor");
+  const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Get user's doctor, pharmacy, support contacts
+  // Get user's doctor and support contacts
   const [contacts, setContacts] = useState({
     doctor: null,
-    pharmacy: null,
-    support: null
+    support: null,
   });
 
   // Load contacts on mount
   useEffect(() => {
-    if (user && user.role === 'patient') {
-      const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      
+    if (user && user.role === "patient") {
+      const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
+
       // Find assigned doctor
-      const assignedDoctor = allUsers.find(u => 
-        u.id === user.assignedDoctorId && u.role === 'doctor'
+      const assignedDoctor = allUsers.find(
+        (u) => u.id === user.assignedDoctorId && u.role === "doctor"
       );
-      
-      // Find pharmacy
-      const pharmacy = allUsers.find(u => u.role === 'pharmacy');
-      
+
       // Find support/admin
-      const support = allUsers.find(u => u.role === 'admin');
-      
+      const support = allUsers.find((u) => u.role === "admin");
+
       setContacts({
         doctor: assignedDoctor,
-        pharmacy: pharmacy,
-        support: support
+        support: support,
       });
-      
+
       // Set default conversation to doctor if exists
       if (assignedDoctor) {
-        setActiveConversation('doctor');
+        setActiveConversation("doctor");
         loadMessages(assignedDoctor.id);
       }
     }
@@ -57,7 +52,7 @@ const MessagingInterface = ({ onMessageSent }) => {
   // Load messages for active conversation
   const loadMessages = (contactId) => {
     if (!user || !contactId) return;
-    
+
     const conversationMessages = getMessagesBetweenUsers(user.id, contactId);
     setMessages(conversationMessages);
   };
@@ -75,76 +70,83 @@ const MessagingInterface = ({ onMessageSent }) => {
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef?.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef?.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = () => {
     if (!newMessage?.trim()) return;
-    
+
     const contact = contacts[activeConversation];
     if (!contact) return;
 
     // Send message via user management system
     const result = sendMessage(user.id, contact.id, newMessage);
-    
+
     if (result.success) {
       // Reload messages
       loadMessages(contact.id);
-      setNewMessage('');
-      
+      setNewMessage("");
+
       if (onMessageSent) {
         onMessageSent(result.message, activeConversation);
       }
-      
+
       // Simulate typing indicator and response (optional)
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
-        
+
         // Auto-response from contact
         const responses = {
-          doctor: "Thank you for your message. I'll review this and get back to you shortly.",
-          pharmacy: "Got it! We'll process your request right away.",
-          support: "Thanks for reaching out! Let me help you with that."
+          doctor:
+            "Thank you for your message. I'll review this and get back to you shortly.",
+          support: "Thanks for reaching out! Let me help you with that.",
         };
-        
-        sendMessage(contact.id, user.id, responses[activeConversation]);
+
+        sendMessage(
+          contact.id,
+          user.id,
+          responses[activeConversation] || responses.support
+        );
         loadMessages(contact.id);
       }, 2000);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e?.key === 'Enter' && !e?.shiftKey) {
+    if (e?.key === "Enter" && !e?.shiftKey) {
       e?.preventDefault();
       handleSendMessage();
     }
   };
 
   const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   const formatDate = (timestamp) => {
     const today = new Date();
     const messageDate = new Date(timestamp);
-    
+
     if (messageDate?.toDateString() === today?.toDateString()) {
-      return 'Today';
+      return "Today";
     }
-    
+
     const yesterday = new Date(today);
     yesterday?.setDate(yesterday?.getDate() - 1);
-    
+
     if (messageDate?.toDateString() === yesterday?.toDateString()) {
-      return 'Yesterday';
+      return "Yesterday";
     }
-    
+
     return messageDate?.toLocaleDateString();
   };
 
   const getStatusColor = (status) => {
-    return 'bg-success'; // All users are online for now
+    return "bg-success"; // All users are online for now
   };
 
   const currentContact = contacts[activeConversation];
@@ -152,8 +154,14 @@ const MessagingInterface = ({ onMessageSent }) => {
   if (!user || !currentContact) {
     return (
       <div className="bg-surface rounded-lg border border-border p-12 text-center">
-        <Icon name="MessageCircle" size={48} className="text-text-secondary/50 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-text-primary mb-2">No Contacts Available</h3>
+        <Icon
+          name="MessageCircle"
+          size={48}
+          className="text-text-secondary/50 mx-auto mb-4"
+        />
+        <h3 className="text-lg font-medium text-text-primary mb-2">
+          No Contacts Available
+        </h3>
         <p className="text-text-secondary">
           You don't have any healthcare providers assigned yet.
         </p>
@@ -180,15 +188,15 @@ const MessagingInterface = ({ onMessageSent }) => {
         <div className="flex space-x-1">
           {Object.entries(contacts).map(([key, contact]) => {
             if (!contact) return null;
-            
+
             return (
               <button
                 key={key}
                 onClick={() => setActiveConversation(key)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-medical ${
                   activeConversation === key
-                    ? 'bg-surface text-text-primary shadow-sm'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface/50'
+                    ? "bg-surface text-text-primary shadow-sm"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface/50"
                 }`}
               >
                 <div className="relative">
@@ -197,9 +205,13 @@ const MessagingInterface = ({ onMessageSent }) => {
                       {contact.name?.charAt(0)}
                     </span>
                   </div>
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor('online')}`} />
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor(
+                      "online"
+                    )}`}
+                  />
                 </div>
-                <span>{contact.name?.split(' ')[0]}</span>
+                <span>{contact.name?.split(" ")[0]}</span>
               </button>
             );
           })}
@@ -215,11 +227,19 @@ const MessagingInterface = ({ onMessageSent }) => {
                 {currentContact.name?.charAt(0)}
               </span>
             </div>
-            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor('online')}`} />
+            <div
+              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-surface ${getStatusColor(
+                "online"
+              )}`}
+            />
           </div>
           <div>
-            <h3 className="font-medium text-text-primary">{currentContact.name}</h3>
-            <p className="text-sm text-text-secondary">{currentContact.role || currentContact.specialization}</p>
+            <h3 className="font-medium text-text-primary">
+              {currentContact.name}
+            </h3>
+            <p className="text-sm text-text-secondary">
+              {currentContact.role || currentContact.specialization}
+            </p>
             <p className="text-xs text-text-secondary">Active now</p>
           </div>
         </div>
@@ -229,14 +249,20 @@ const MessagingInterface = ({ onMessageSent }) => {
       <div className="h-96 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center py-8 text-text-secondary">
-            <Icon name="MessageCircle" size={48} className="mx-auto mb-2 opacity-50" />
+            <Icon
+              name="MessageCircle"
+              size={48}
+              className="mx-auto mb-2 opacity-50"
+            />
             <p>No messages yet. Start a conversation!</p>
           </div>
         ) : (
           messages.map((message, index) => {
             const isPatient = message.from === user.id;
-            const showDate = index === 0 || 
-              formatDate(message.timestamp) !== formatDate(messages[index - 1]?.timestamp);
+            const showDate =
+              index === 0 ||
+              formatDate(message.timestamp) !==
+                formatDate(messages[index - 1]?.timestamp);
 
             return (
               <div key={message.id}>
@@ -248,18 +274,30 @@ const MessagingInterface = ({ onMessageSent }) => {
                   </div>
                 )}
 
-                <div className={`flex ${isPatient ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs lg:max-w-md ${isPatient ? 'order-2' : 'order-1'}`}>
-                    <div className={`p-3 rounded-lg ${
-                      isPatient
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-text-primary'
-                    }`}>
+                <div
+                  className={`flex ${
+                    isPatient ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-xs lg:max-w-md ${
+                      isPatient ? "order-2" : "order-1"
+                    }`}
+                  >
+                    <div
+                      className={`p-3 rounded-lg ${
+                        isPatient
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-text-primary"
+                      }`}
+                    >
                       <p className="text-sm">{message.message}</p>
                     </div>
-                    <p className={`text-xs text-text-secondary mt-1 ${
-                      isPatient ? 'text-right' : 'text-left'
-                    }`}>
+                    <p
+                      className={`text-xs text-text-secondary mt-1 ${
+                        isPatient ? "text-right" : "text-left"
+                      }`}
+                    >
                       {formatTime(message.timestamp)}
                     </p>
                   </div>
@@ -275,8 +313,14 @@ const MessagingInterface = ({ onMessageSent }) => {
             <div className="bg-muted p-3 rounded-lg">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce" />
-                <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                <div className="w-2 h-2 bg-text-secondary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                <div
+                  className="w-2 h-2 bg-text-secondary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                />
+                <div
+                  className="w-2 h-2 bg-text-secondary rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                />
               </div>
             </div>
           </div>

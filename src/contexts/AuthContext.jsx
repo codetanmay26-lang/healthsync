@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { initializeDefaultUsers, getAllUsers } from '../services/localStorageUserManagement';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  initializeDefaultUsers,
+  getAllUsers,
+} from "../services/localStorageUserManagement";
 
 // Create context with default value
 const AuthContext = createContext(null);
@@ -9,7 +12,7 @@ const AuthContext = createContext(null);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -28,17 +31,17 @@ export const AuthProvider = ({ children }) => {
   // Check for existing session on mount
   useEffect(() => {
     const checkExistingSession = () => {
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
-      const sessionStart = localStorage.getItem('sessionStart');
+      const token = localStorage.getItem("authToken");
+      const userId = localStorage.getItem("userId");
+      const sessionStart = localStorage.getItem("sessionStart");
 
       if (token && userId && sessionStart) {
         const sessionAge = (new Date() - new Date(sessionStart)) / 1000;
         if (sessionAge < sessionTimeout) {
           // Get user from users database
           const users = getAllUsers();
-          const currentUser = users.find(u => u.id === userId);
-          
+          const currentUser = users.find((u) => u.id === userId);
+
           if (currentUser) {
             setUser(currentUser);
           } else {
@@ -61,30 +64,31 @@ export const AuthProvider = ({ children }) => {
     try {
       // Get all users from localStorage
       const users = getAllUsers();
-      
+
       // Find matching user
-      const account = users.find(u => 
-        u.email.toLowerCase() === credentials.email?.toLowerCase() &&
-        u.password === credentials.password &&
-        u.role === credentials.role &&
-        u.active === true
+      const account = users.find(
+        (u) =>
+          u.email.toLowerCase() === credentials.email?.toLowerCase() &&
+          u.password === credentials.password &&
+          u.role === credentials.role &&
+          u.active === true
       );
 
       if (!account) {
         setIsLoading(false);
-        throw new Error('Invalid credentials');
+        throw new Error("Invalid credentials");
       }
 
       // Generate token and store session
       const token = `token-${Date.now()}-${Math.random()}`;
       const sessionStart = new Date().toISOString();
 
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('userId', account.id);
-      localStorage.setItem('userRole', account.role);
-      localStorage.setItem('userName', account.name);
-      localStorage.setItem('userEmail', account.email);
-      localStorage.setItem('sessionStart', sessionStart);
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userId", account.id);
+      localStorage.setItem("userRole", account.role);
+      localStorage.setItem("userName", account.name);
+      localStorage.setItem("userEmail", account.email);
+      localStorage.setItem("sessionStart", sessionStart);
 
       setUser(account);
       redirectToRoleDashboard(account.role);
@@ -100,30 +104,29 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     clearAuthData();
     setUser(null);
-    navigate('/login');
+    navigate("/login");
   };
 
   const clearAuthData = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('sessionStart');
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("sessionStart");
   };
 
   const redirectToRoleDashboard = (role) => {
     const roleRoutes = {
-      doctor: '/doctor-dashboard',
-      patient: '/patient-portal',
-      pharmacy: '/pharmacy-dashboard',
-      admin: '/admin-analytics'
+      doctor: "/doctor-dashboard",
+      patient: "/patient-portal",
+      admin: "/admin-analytics",
     };
-    navigate(roleRoutes[role] || '/doctor-dashboard');
+    navigate(roleRoutes[role] || "/doctor-dashboard");
   };
 
   const extendSession = () => {
-    localStorage.setItem('sessionStart', new Date().toISOString());
+    localStorage.setItem("sessionStart", new Date().toISOString());
   };
 
   const value = {
@@ -132,14 +135,10 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     extendSession,
-    sessionTimeout
+    sessionTimeout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Default export (optional, but good practice)

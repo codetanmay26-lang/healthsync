@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
+import React, { useState } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
 
 const EmergencyContactPanel = ({ onEmergencyCall }) => {
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
@@ -15,7 +15,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       email: "sarah.johnson@healthsync.com",
       availability: "Mon-Fri 8AM-6PM",
       status: "available",
-      priority: "primary"
+      priority: "primary",
     },
     {
       id: 2,
@@ -25,17 +25,17 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       email: "emergency@citygeneral.com",
       availability: "24/7",
       status: "available",
-      priority: "emergency"
+      priority: "emergency",
     },
     {
       id: 3,
-      name: "HealthSync Pharmacy",
-      role: "Pharmacy Services",
+      name: "HealthSync Care Team",
+      role: "Care Coordination Support",
       phone: "+91 8743XXXX",
-      email: "support@healthsyncpharmacy.com",
+      email: "careteam@healthsync.com",
       availability: "Mon-Sat 8AM-10PM",
       status: "available",
-      priority: "secondary"
+      priority: "secondary",
     },
     {
       id: 4,
@@ -45,7 +45,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       email: "info@poison.org",
       availability: "24/7",
       status: "available",
-      priority: "emergency"
+      priority: "emergency",
     },
     {
       id: 5,
@@ -55,78 +55,86 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
       email: "crisis@mentalhealth.org",
       availability: "24/7",
       status: "available",
-      priority: "emergency"
-    }
+      priority: "emergency",
+    },
   ];
 
   const quickActions = [
     {
-      id: 'emergency',
-      label: 'Emergency Services',
-      description: 'Call 112 for immediate emergency',
-      icon: 'Phone',
-      color: 'bg-error text-error-foreground',
-      action: () => handleEmergencyCall('112')
+      id: "emergency",
+      label: "Emergency Services",
+      description: "Call 112 for immediate emergency",
+      icon: "Phone",
+      color: "bg-error text-error-foreground",
+      action: () => handleEmergencyCall("112"),
     },
     {
-      id: 'doctor',
-      label: 'Call Doctor',
-      description: 'Contact your primary care physician',
-      icon: 'Stethoscope',
-      color: 'bg-primary text-primary-foreground',
-      action: () => handleContactCall(emergencyContacts[0])
+      id: "doctor",
+      label: "Call Doctor",
+      description: "Contact your primary care physician",
+      icon: "Stethoscope",
+      color: "bg-primary text-primary-foreground",
+      action: () => handleContactCall(emergencyContacts[0]),
     },
     {
-      id: 'pharmacy',
-      label: 'Call Pharmacy',
-      description: 'Contact pharmacy for medication help',
-      icon: 'Pill',
-      color: 'bg-accent text-accent-foreground',
-      action: () => handleContactCall(emergencyContacts[2])
+      id: "care-team",
+      label: "Care Team",
+      description: "Connect with coordination support",
+      icon: "Users",
+      color: "bg-accent text-accent-foreground",
+      action: () => handleContactCall(emergencyContacts[2]),
     },
     {
-      id: 'hospital',
-      label: 'Hospital',
-      description: 'Contact emergency department',
-      icon: 'Building2',
-      color: 'bg-warning text-warning-foreground',
-      action: () => handleContactCall(emergencyContacts[1])
-    }
+      id: "hospital",
+      label: "Hospital",
+      description: "Contact emergency department",
+      icon: "Building2",
+      color: "bg-warning text-warning-foreground",
+      action: () => handleContactCall(emergencyContacts[1]),
+    },
   ];
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'available': return 'text-success bg-success/10';
-      case 'busy': return 'text-warning bg-warning/10';
-      case 'unavailable': return 'text-error bg-error/10';
-      default: return 'text-text-secondary bg-muted';
+      case "available":
+        return "text-success bg-success/10";
+      case "busy":
+        return "text-warning bg-warning/10";
+      case "unavailable":
+        return "text-error bg-error/10";
+      default:
+        return "text-text-secondary bg-muted";
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'emergency': return 'border-l-error';
-      case 'primary': return 'border-l-primary';
-      case 'secondary': return 'border-l-accent';
-      default: return 'border-l-border';
+      case "emergency":
+        return "border-l-error";
+      case "primary":
+        return "border-l-primary";
+      case "secondary":
+        return "border-l-accent";
+      default:
+        return "border-l-border";
     }
   };
 
   const handleEmergencyCall = (number) => {
     setShowEmergencyModal(true);
-    setSelectedContact({ name: 'Emergency Services', phone: number });
-    
+    setSelectedContact({ name: "Emergency Services", phone: number });
+
     if (onEmergencyCall) {
-      onEmergencyCall({ type: 'emergency', number });
+      onEmergencyCall({ type: "emergency", number });
     }
   };
 
   const handleContactCall = (contact) => {
     setShowEmergencyModal(true);
     setSelectedContact(contact);
-    
+
     if (onEmergencyCall) {
-      onEmergencyCall({ type: 'contact', contact });
+      onEmergencyCall({ type: "contact", contact });
     }
   };
 
@@ -150,7 +158,9 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
     <>
       <div className="bg-surface rounded-lg border border-border p-6">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-text-primary">Emergency Contacts</h2>
+          <h2 className="text-xl font-semibold text-text-primary">
+            Emergency Contacts
+          </h2>
           <p className="text-sm text-text-secondary mt-1">
             Quick access to healthcare providers and emergency services
           </p>
@@ -178,16 +188,23 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
         {/* Emergency Alert */}
         <div className="bg-error/10 border border-error/20 rounded-lg p-4 mb-6">
           <div className="flex items-start space-x-3">
-            <Icon name="AlertTriangle" size={20} className="text-error mt-0.5" />
+            <Icon
+              name="AlertTriangle"
+              size={20}
+              className="text-error mt-0.5"
+            />
             <div>
-              <h3 className="font-medium text-error mb-1">Medical Emergency?</h3>
+              <h3 className="font-medium text-error mb-1">
+                Medical Emergency?
+              </h3>
               <p className="text-sm text-error/80 mb-3">
-                If you're experiencing a life-threatening emergency, call 112 immediately.
+                If you're experiencing a life-threatening emergency, call 112
+                immediately.
               </p>
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleEmergencyCall('112')}
+                onClick={() => handleEmergencyCall("112")}
                 iconName="Phone"
                 iconPosition="left"
                 iconSize={16}
@@ -201,24 +218,38 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
 
         {/* Contact List */}
         <div className="space-y-3">
-          <h3 className="text-lg font-medium text-text-primary">Your Healthcare Team</h3>
+          <h3 className="text-lg font-medium text-text-primary">
+            Your Healthcare Team
+          </h3>
           {emergencyContacts.map((contact) => (
             <div
               key={contact.id}
-              className={`bg-muted rounded-lg p-4 border-l-4 ${getPriorityColor(contact.priority)} transition-medical hover:bg-muted/80`}
+              className={`bg-muted rounded-lg p-4 border-l-4 ${getPriorityColor(
+                contact.priority
+              )} transition-medical hover:bg-muted/80`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="font-medium text-text-primary">{contact.name}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(contact.status)}`}>
+                    <h4 className="font-medium text-text-primary">
+                      {contact.name}
+                    </h4>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        contact.status
+                      )}`}
+                    >
                       {contact.status}
                     </span>
                   </div>
-                  
-                  <p className="text-sm text-text-secondary mb-1">{contact.role}</p>
-                  <p className="text-sm text-text-secondary">{contact.availability}</p>
-                  
+
+                  <p className="text-sm text-text-secondary mb-1">
+                    {contact.role}
+                  </p>
+                  <p className="text-sm text-text-secondary">
+                    {contact.availability}
+                  </p>
+
                   <div className="flex items-center space-x-4 mt-2">
                     <div className="flex items-center space-x-1 text-sm text-text-secondary">
                       <Icon name="Phone" size={14} />
@@ -232,7 +263,7 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
@@ -294,16 +325,22 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
                   <Icon name="Phone" size={24} className="text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-text-primary">Contact {selectedContact.name}</h3>
-                  <p className="text-sm text-text-secondary">{selectedContact.phone}</p>
+                  <h3 className="font-semibold text-text-primary">
+                    Contact {selectedContact.name}
+                  </h3>
+                  <p className="text-sm text-text-secondary">
+                    {selectedContact.phone}
+                  </p>
                 </div>
               </div>
-              
+
               <p className="text-sm text-text-secondary mb-6">
-                You're about to contact {selectedContact.name}. 
-                {selectedContact.name === 'Emergency Services' ? ' This will connect you to emergency services.' : ' Choose how you\'d like to reach them.'}
+                You're about to contact {selectedContact.name}.
+                {selectedContact.name === "Emergency Services"
+                  ? " This will connect you to emergency services."
+                  : " Choose how you'd like to reach them."}
               </p>
-              
+
               <div className="flex space-x-3">
                 <Button
                   variant="default"
@@ -315,20 +352,21 @@ const EmergencyContactPanel = ({ onEmergencyCall }) => {
                 >
                   Call Now
                 </Button>
-                
-                {selectedContact.email && selectedContact.name !== 'Emergency Services' && (
-                  <Button
-                    variant="outline"
-                    onClick={sendMessage}
-                    iconName="MessageCircle"
-                    iconPosition="left"
-                    iconSize={16}
-                    className="flex-1"
-                  >
-                    Message
-                  </Button>
-                )}
-                
+
+                {selectedContact.email &&
+                  selectedContact.name !== "Emergency Services" && (
+                    <Button
+                      variant="outline"
+                      onClick={sendMessage}
+                      iconName="MessageCircle"
+                      iconPosition="left"
+                      iconSize={16}
+                      className="flex-1"
+                    >
+                      Message
+                    </Button>
+                  )}
+
                 <Button
                   variant="ghost"
                   onClick={() => setShowEmergencyModal(false)}

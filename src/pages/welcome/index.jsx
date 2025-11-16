@@ -1,37 +1,41 @@
 // src/pages/welcome/index.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import CombinedIllustration from './CombinedIllustration';
-import CustomCursor from './CustomCursor';
-import './background.css';
+import React from "react";
+import { Link } from "react-router-dom";
+import Icon from "../../components/AppIcon";
+import Button from "../../components/ui/Button";
+import CombinedIllustration from "./CombinedIllustration";
+import CustomCursor from "./CustomCursor";
+import "./background.css";
 
 const WelcomePage = () => {
   const features = [
     {
-      icon: 'Stethoscope',
-      title: 'For Doctors',
-      description: 'Monitor patient adherence, analyze vitals, and receive AI-powered insights.',
-      color: 'text-blue-500',
+      icon: "Stethoscope",
+      title: "For Doctors",
+      description:
+        "Monitor patient adherence, analyze vitals, and receive AI-powered insights.",
+      color: "text-blue-500",
     },
     {
-      icon: 'User',
-      title: 'For Patients',
-      description: 'Track your medication, log health data, and connect with your care team.',
-      color: 'text-emerald-500',
+      icon: "User",
+      title: "For Patients",
+      description:
+        "Track your medication, log health data, and connect with your care team.",
+      color: "text-emerald-500",
     },
     {
-      icon: 'Pill',
-      title: 'For Pharmacy',
-      description: 'Manage inventory, process refills, and monitor medication storage.',
-      color: 'text-amber-500',
+      icon: "Users",
+      title: "For Care Teams",
+      description:
+        "Coordinate interdisciplinary support, track outreach, and streamline follow-ups.",
+      color: "text-amber-500",
     },
     {
-      icon: 'Shield',
-      title: 'For Admins',
-      description: 'Oversee analytics, manage users, and ensure seamless continuity of care.',
-      color: 'text-indigo-500',
+      icon: "Shield",
+      title: "For Admins",
+      description:
+        "Oversee analytics, manage users, and ensure seamless continuity of care.",
+      color: "text-indigo-500",
     },
   ];
 
@@ -42,10 +46,17 @@ const WelcomePage = () => {
       <header className="relative z-10 p-4 flex justify-between items-center bg-transparent">
         <div className="flex items-center space-x-2">
           {/* Ensure this path points to your logo */}
-          <img src="/assets/images/logo.png" alt="HealthSync Logo" className="w-9 h-9" />
+          <img
+            src="/assets/images/logo.png"
+            alt="HealthSync Logo"
+            className="w-9 h-9"
+          />
           <span className="font-bold text-2xl text-gray-900">HealthSync</span>
         </div>
-        <Button asChild className="bg-white/80 text-blue-600 font-semibold hover:bg-white shadow-sm">
+        <Button
+          asChild
+          className="bg-white/80 text-blue-600 font-semibold hover:bg-white shadow-sm"
+        >
           <Link to="/login">Sign In</Link>
         </Button>
       </header>
@@ -58,7 +69,9 @@ const WelcomePage = () => {
               AI-Powered Continuity of Care
             </h1>
             <p className="text-lg text-gray-700 mb-10">
-              HealthSync optimizes patient recovery, reduces hospital readmissions, and empowers healthcare professionals with intelligent monitoring.
+              HealthSync optimizes patient recovery, reduces hospital
+              readmissions, and empowers healthcare professionals with
+              intelligent monitoring.
             </p>
             <Button
               size="xl"
@@ -85,8 +98,12 @@ const WelcomePage = () => {
               <div className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 mb-5 pulse-animation">
                 <Icon name={feature.icon} size={32} className={feature.color} />
               </div>
-              <h3 className="font-semibold text-xl text-gray-800 mb-3">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+              <h3 className="font-semibold text-xl text-gray-800 mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>

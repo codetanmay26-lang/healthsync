@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import Icon from '../AppIcon';
-import Button from './Button';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import Icon from "../AppIcon";
+import Button from "./Button";
 
 const Header = ({ isCollapsed = false, onToggleSidebar }) => {
   const { user, logout } = useAuth();
@@ -21,26 +21,21 @@ const Header = ({ isCollapsed = false, onToggleSidebar }) => {
 
   const getRoleBasedNavigation = () => {
     switch (user?.role) {
-      case 'doctor':
+      case "doctor":
         return [
-          { label: 'Dashboard', path: '/doctor-dashboard', icon: 'Activity' },
-          { label: 'Patients', path: '/patient-profile', icon: 'Users' },
-          { label: 'Analytics', path: '/admin-analytics', icon: 'BarChart3' },
+          { label: "Dashboard", path: "/doctor-dashboard", icon: "Activity" },
+          { label: "Patients", path: "/patient-profile", icon: "Users" },
+          { label: "Analytics", path: "/admin-analytics", icon: "BarChart3" },
         ];
-      case 'patient':
+      case "patient":
         return [
-          { label: 'My Portal', path: '/patient-portal', icon: 'User' },
-          { label: 'Medications', path: '/patient-portal', icon: 'Pill' },
+          { label: "My Portal", path: "/patient-portal", icon: "User" },
+          { label: "Medications", path: "/patient-portal", icon: "Pill" },
         ];
-      case 'pharmacy':
+      case "admin":
         return [
-          { label: 'Dashboard', path: '/pharmacy-dashboard', icon: 'Package' },
-          { label: 'Inventory', path: '/pharmacy-dashboard', icon: 'Archive' },
-        ];
-      case 'admin':
-        return [
-          { label: 'Analytics', path: '/admin-analytics', icon: 'BarChart3' },
-          { label: 'Users', path: '/admin-analytics', icon: 'Users' },
+          { label: "Analytics", path: "/admin-analytics", icon: "BarChart3" },
+          { label: "Users", path: "/admin-analytics", icon: "Users" },
         ];
       default:
         return [];
@@ -68,7 +63,7 @@ const Header = ({ isCollapsed = false, onToggleSidebar }) => {
           <div className="text-sm text-text-secondary">
             {currentTime.toLocaleTimeString()}
           </div>
-          
+
           {/* User Menu */}
           <div className="relative">
             <Button
@@ -80,7 +75,7 @@ const Header = ({ isCollapsed = false, onToggleSidebar }) => {
               <span className="hidden sm:inline">{user?.name}</span>
               <Icon name="ChevronDown" size={14} />
             </Button>
-            
+
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-50">
                 <div className="p-2">

@@ -1,47 +1,46 @@
-import React, { useState } from 'react';
-import Icon from '../../../components/AppIcon';
-import Button from '../../../components/ui/Button';
-import Input from '../../../components/ui/Input';
-import { Checkbox } from '../../../components/ui/Checkbox';
+import React, { useState } from "react";
+import Icon from "../../../components/AppIcon";
+import Button from "../../../components/ui/Button";
+import Input from "../../../components/ui/Input";
+import { Checkbox } from "../../../components/ui/Checkbox";
 
 const LoginForm = ({ onLogin, isLoading, error }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    role: 'doctor',
-    rememberMe: false
+    email: "",
+    password: "",
+    role: "doctor",
+    rememberMe: false,
   });
   const [validationErrors, setValidationErrors] = useState({});
 
   const roles = [
-    { value: 'doctor', label: 'Doctor', icon: 'Stethoscope' },
-    { value: 'patient', label: 'Patient', icon: 'User' },
-    { value: 'pharmacy', label: 'Pharmacy', icon: 'Pill' },
-    { value: 'admin', label: 'Administrator', icon: 'Shield' }
+    { value: "doctor", label: "Doctor", icon: "Stethoscope" },
+    { value: "patient", label: "Patient", icon: "User" },
+    { value: "admin", label: "Administrator", icon: "Shield" },
   ];
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (validationErrors?.[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      setValidationErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData?.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/?.test(formData?.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = "Please enter a valid email address";
     }
-    
+
     if (!formData?.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData?.password?.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors)?.length === 0;
   };
@@ -61,7 +60,7 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
         type="email"
         placeholder="Enter your email"
         value={formData?.email}
-        onChange={(e) => handleInputChange('email', e?.target?.value)}
+        onChange={(e) => handleInputChange("email", e?.target?.value)}
         error={validationErrors?.email}
         required
         disabled={isLoading}
@@ -72,7 +71,7 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
         type="password"
         placeholder="Enter your password"
         value={formData?.password}
-        onChange={(e) => handleInputChange('password', e?.target?.value)}
+        onChange={(e) => handleInputChange("password", e?.target?.value)}
         error={validationErrors?.password}
         required
         disabled={isLoading}
@@ -87,10 +86,11 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
             <button
               key={role?.value}
               type="button"
-              onClick={() => handleInputChange('role', role?.value)}
+              onClick={() => handleInputChange("role", role?.value)}
               className={`flex items-center space-x-3 p-3 rounded-lg border transition-medical ${
                 formData?.role === role?.value
-                  ? 'border-primary bg-primary/10 text-primary' :'border-border bg-surface hover:bg-muted text-text-secondary'
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-surface hover:bg-muted text-text-secondary"
               }`}
               disabled={isLoading}
             >
@@ -105,13 +105,13 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
         <Checkbox
           label="Remember me"
           checked={formData?.rememberMe}
-          onChange={(e) => handleInputChange('rememberMe', e?.target?.checked)}
+          onChange={(e) => handleInputChange("rememberMe", e?.target?.checked)}
           disabled={isLoading}
         />
-        
+
         <button
           type="button"
-          onClick={() => window.location.href = '/forgot-password'}
+          onClick={() => (window.location.href = "/forgot-password")}
           className="text-sm text-primary hover:text-primary/80 transition-medical"
           disabled={isLoading}
         >
@@ -137,7 +137,7 @@ const LoginForm = ({ onLogin, isLoading, error }) => {
         iconSize={18}
         disabled={isLoading}
       >
-        {isLoading ? 'Signing In...' : 'Sign In'}
+        {isLoading ? "Signing In..." : "Sign In"}
       </Button>
     </form>
   );

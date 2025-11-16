@@ -40,51 +40,52 @@ export default function PrescriptionUploader({ patientId }) {
   };
 
   // ✅ Convert structured meds → reminders
-// Convert structured meds to reminders
-const buildSmartReminders = (meds, patientId) => {
-  const reminders = [];
+  // Convert structured meds to reminders
+  const buildSmartReminders = (meds, patientId) => {
+    const reminders = [];
 
-  meds.forEach((m, i) => {
-    // ✅ FIX: Ensure timings is always an array
-    let timings = m.timings;
-    
-    // Convert string to array if needed
-    if (typeof timings === 'string') {
-      timings = [timings];
-    }
-    
-    // Default to morning if no timings provided
-    if (!timings || timings.length === 0) {
-      timings = ['morning'];
-    }
+    meds.forEach((m, i) => {
+      // ✅ FIX: Ensure timings is always an array
+      let timings = m.timings;
 
-    const freq =
-      timings.length === 1
-        ? 'once daily'
-        : timings.length === 2
-        ? 'twice daily'
-        : timings.length === 3
-        ? 'three times daily'
-        : `${timings.length} times daily`;
+      // Convert string to array if needed
+      if (typeof timings === "string") {
+        timings = [timings];
+      }
 
-    // ✅ Now this won't crash
-    timings.forEach((t, idx) => {
-      reminders.push({
-        id: Date.now() + i * 1000 + idx,
-        patientId,
-        medicineName: m.name,
-        dosage: m.dosage || '1 tablet',
-        timing: t,
-        frequency: freq,
-        instructions: m.notes || (m.food ? `Take ${m.food} food` : 'as directed'),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
+      // Default to morning if no timings provided
+      if (!timings || timings.length === 0) {
+        timings = ["morning"];
+      }
+
+      const freq =
+        timings.length === 1
+          ? "once daily"
+          : timings.length === 2
+          ? "twice daily"
+          : timings.length === 3
+          ? "three times daily"
+          : `${timings.length} times daily`;
+
+      // ✅ Now this won't crash
+      timings.forEach((t, idx) => {
+        reminders.push({
+          id: Date.now() + i * 1000 + idx,
+          patientId,
+          medicineName: m.name,
+          dosage: m.dosage || "1 tablet",
+          timing: t,
+          frequency: freq,
+          instructions:
+            m.notes || (m.food ? `Take ${m.food} food` : "as directed"),
+          status: "pending",
+          createdAt: new Date().toISOString(),
+        });
       });
     });
-  });
 
-  return reminders;
-};
+    return reminders;
+  };
 
   // ✅ MAIN logic
   const handleAnalyzeAndCreateReminders = async (prescriptionFile) => {
@@ -243,7 +244,9 @@ const buildSmartReminders = (meds, patientId) => {
                 {!prescription.analyzed && (
                   <Button
                     size="sm"
-                    onClick={() => handleAnalyzeAndCreateReminders(prescription)}
+                    onClick={() =>
+                      handleAnalyzeAndCreateReminders(prescription)
+                    }
                     disabled={analyzing}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
@@ -254,9 +257,14 @@ const buildSmartReminders = (meds, patientId) => {
                 )}
 
                 {prescription.analyzed && (
-                  <Button variant="outline" size="sm" disabled className="text-green-600">
-                    <Icon name="Check" size={16} className="mr-1" />
-                    ✓ Reminders Created
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="text-green-600"
+                  >
+                    <Icon name="Check" size={16} className="mr-1" />✓ Reminders
+                    Created
                   </Button>
                 )}
               </div>
