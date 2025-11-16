@@ -36,7 +36,7 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 | **Data Viz**   | D3.js, Recharts                                              |
 | **Forms**      | React Hook Form                                              |
 | **Testing**    | Jest, React Testing Library                                  |
-| **AI/NLP/OCR** | Tesseract.js, spaCy, Google Vision, Gemini API               |
+| **AI/NLP/OCR** | Azure Computer Vision, spaCy, Google Vision, Gemini API      |
 | **Backend**    | Node.js (Firebase & Realtime DB planned)                     |
 | **APIs**       | Google Fit, Gemini API, Cloud Messaging (future)             |
 | **Other**      | Axios, class-variance-authority, date-fns, jsPDF             |
@@ -50,19 +50,33 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 ## ▸ Installation
 
 1. Install dependencies:
+
    ```bash
    npm install
-   npm install jspdf tesseract.js react-pdftotext
+   npm install jspdf react-pdftotext
    # or
    yarn install
-   yarn add jspdf tesseract.js react-pdftotext
+   yarn add jspdf react-pdftotext
+
    ```
+
+2. Configure environment variables (`.env`):
+
+```env
+VITE_AZURE_VISION_ENDPOINT=https://your-resource-name.cognitiveservices.azure.com
+VITE_AZURE_VISION_KEY=your-azure-vision-key
+VITE_AZURE_VISION_API_VERSION=2024-02-01
+```
+
+The endpoint/key pair comes from the Azure AI Services resource that has Computer Vision enabled. Keep these values private.
+
+````
 2. Start the development server:
-   ```bash
-   npm start
-   # or
-   yarn start
-   ```
+```bash
+npm start
+# or
+yarn start
+````
 
 ## ▸ Demo Data & Privacy
 

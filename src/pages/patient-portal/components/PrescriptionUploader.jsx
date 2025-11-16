@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Button from "../../../components/ui/Button";
 import Icon from "../../../components/AppIcon";
 import { analyzePrescription } from "../../../utils/prescriptionAnalysis";
-import Tesseract from "tesseract.js";
+import { extractTextWithAzureVision } from "../../../services/azureVision";
 
 export default function PrescriptionUploader({ patientId }) {
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -28,10 +28,17 @@ export default function PrescriptionUploader({ patientId }) {
   // ✅ Extract text (OCR + fallback)
   const extractTextFromPrescription = async (file) => {
     try {
-      if (file.type.startsWith("image/")) {
-        const { data } = await Tesseract.recognize(file, "eng");
-        return data.text;
+      if (file.type.startsWith("image/") || file.type === "application/pdf") {
+        try {
+          const azureText = await extractTextWithAzureVision(file);
+          if (azureText?.trim()) {
+            return azureText;
+          }
+        } catch (azureError) {
+          console.error("Azure Vision OCR failed:", azureError);
+        }
       }
+
       return await file.text();
     } catch (err) {
       console.error("OCR/Text read failed:", err);

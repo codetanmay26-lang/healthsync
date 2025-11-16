@@ -29,7 +29,7 @@ Project-specific conventions and gotchas:
 Integration points and external dependencies:
 
 - Gemini API: `src/utils/*Analysis.js` call `https://generativelanguage.googleapis.com/...` and require `VITE_GEMINI_API_KEY` env var. Agents adding AI logic should gate calls behind feature flags or env checks to avoid leaking keys in public builds.
-- OCR & PDF libs: `tesseract.js`, `react-pdftotext`, `jspdf` are included in `package.json`. Look in the `patient-portal` uploaders for how files are handled.
+- OCR: Prescription uploads call Azure Computer Vision via `src/services/azureVision.js` (env vars: `VITE_AZURE_VISION_ENDPOINT`, `VITE_AZURE_VISION_KEY`). PDF text extraction still uses `react-pdftotext`/`jspdf` helpers when needed.
 - Analytics and charts: `d3` and `recharts` are used in dashboard components under `src/pages/*/components`.
 
 Concrete editing examples an agent may be asked to do:
