@@ -25,7 +25,7 @@ HealthSync bridges the healthcare gap post-discharge by creating a connected car
 🔹 **Emergency Prediction** - Real-time risk assessment from vitals and lab data  
 🔹 **Care Team Coordination** - Shared workspaces for outreach and follow-ups  
 🔹 **Multi-Role Dashboards** - Tailored interfaces for doctors, patients, and admins  
-🔹 **Wearable Integration** - Real-time vitals from smartwatches
+🔹 **Wearable Integration** - Real-time vitals from smartwatch
 
 ## ▸ Tech Stack
 
